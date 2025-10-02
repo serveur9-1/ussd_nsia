@@ -1,0 +1,9 @@
+.env
+/.idea
+/logs
+/node_modules
+yarn.lock
+.DS_Store
+
+/src/generated/prisma
+/dist

@@ -1,0 +1,342 @@
+-- CreateTable
+CREATE TABLE `anomalie` (
+    `id_anomalie` INTEGER NOT NULL AUTO_INCREMENT,
+    `msisdn` VARCHAR(50) NOT NULL,
+    `reference_init` VARCHAR(255) NOT NULL,
+    `new_reference` VARCHAR(255) NOT NULL,
+    `date_modification` DATE NOT NULL,
+
+    PRIMARY KEY (`id_anomalie`)
+) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+
+-- CreateTable
+CREATE TABLE `bonus` (
+    `id` INTEGER NOT NULL AUTO_INCREMENT,
+    `montant` VARCHAR(10) NOT NULL,
+    `produit` VARCHAR(10) NOT NULL,
+    `niveau` INTEGER NOT NULL,
+
+    PRIMARY KEY (`id`)
+) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+
+-- CreateTable
+CREATE TABLE `commission` (
+    `id` INTEGER NOT NULL AUTO_INCREMENT,
+    `montant` VARCHAR(225) NOT NULL,
+    `produit` VARCHAR(50) NOT NULL,
+    `type_merchant` VARCHAR(2) NOT NULL,
+    `type_transaction` VARCHAR(25) NOT NULL,
+
+    PRIMARY KEY (`id`)
+) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+
+-- CreateTable
+CREATE TABLE `factures` (
+    `ID_FACTURE` INTEGER NOT NULL AUTO_INCREMENT,
+    `REFERENCE` VARCHAR(255) NOT NULL,
+    `AMOUNT` VARCHAR(50) NOT NULL,
+    `MSISDN` VARCHAR(50) NOT NULL,
+    `BILLMAP_TRANSACTION_ID` VARCHAR(50) NOT NULL,
+    `EWP_TRANSACTION_ID` VARCHAR(50) NOT NULL,
+    `RESPONSE_CODE` VARCHAR(50) NOT NULL,
+    `RESPONSE_MESSAGE` VARCHAR(500) NOT NULL,
+    `Date_transaction` VARCHAR(15) NOT NULL,
+    `prime` VARCHAR(50) NOT NULL,
+
+    PRIMARY KEY (`ID_FACTURE`)
+) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+
+-- CreateTable
+CREATE TABLE `failed_jobs` (
+    `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+    `uuid` VARCHAR(255) NOT NULL,
+    `connection` TEXT NOT NULL,
+    `queue` TEXT NOT NULL,
+    `payload` LONGTEXT NOT NULL,
+    `exception` LONGTEXT NOT NULL,
+    `failed_at` TIMESTAMP(0) NOT NULL DEFAULT CURRENT_TIMESTAMP(0),
+
+    PRIMARY KEY (`id`)
+) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+
+-- CreateTable
+CREATE TABLE `jobs` (
+    `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+    `queue` VARCHAR(255) NOT NULL,
+    `payload` LONGTEXT NOT NULL,
+    `attempts` TINYINT UNSIGNED NOT NULL,
+    `reserved_at` INTEGER UNSIGNED NULL,
+    `available_at` INTEGER UNSIGNED NOT NULL,
+    `created_at` INTEGER UNSIGNED NOT NULL,
+
+    INDEX `jobs_queue_index`(`queue`),
+    PRIMARY KEY (`id`)
+) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+
+-- CreateTable
+CREATE TABLE `merchant` (
+    `id` INTEGER NOT NULL AUTO_INCREMENT,
+    `noms_prenoms` VARCHAR(100) NOT NULL,
+    `phoneNo` VARCHAR(25) NOT NULL,
+    `commission` VARCHAR(255) NOT NULL,
+    `id_equipe` INTEGER NOT NULL,
+    `type_merchant` INTEGER NOT NULL,
+    `status` INTEGER NOT NULL DEFAULT 1,
+    `created_at` TIMESTAMP(0) NOT NULL DEFAULT ('2019-08-29 00:00:00'),
+    `updated_at` TIMESTAMP(0) NOT NULL DEFAULT ('2019-08-29 00:00:00'),
+
+    PRIMARY KEY (`id`)
+) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+
+-- CreateTable
+CREATE TABLE `merchant_transactions` (
+    `id` INTEGER NOT NULL AUTO_INCREMENT,
+    `id_client` INTEGER NOT NULL,
+    `id_merchant` INTEGER NOT NULL,
+    `reference_transaction` VARCHAR(255) NOT NULL,
+    `etat_transaction` VARCHAR(10) NOT NULL,
+    `montant_transaction` VARCHAR(255) NOT NULL,
+    `date_transaction` VARCHAR(10) NOT NULL,
+
+    PRIMARY KEY (`id`)
+) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+
+-- CreateTable
+CREATE TABLE `migrations` (
+    `id` INTEGER UNSIGNED NOT NULL,
+    `migration` VARCHAR(255) NOT NULL,
+    `batch` INTEGER NOT NULL
+) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+
+-- CreateTable
+CREATE TABLE `naf_beneficiaires` (
+    `ID_BENEFICIAIRE` INTEGER NOT NULL AUTO_INCREMENT,
+    `NOM_BENEFICIAIRE` VARCHAR(50) NOT NULL,
+    `TELEPHONE_BENEFICIAIRE` VARCHAR(50) NOT NULL,
+    `TYPE_BENEFICIAIRE` VARCHAR(50) NOT NULL,
+
+    PRIMARY KEY (`ID_BENEFICIAIRE`)
+) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+
+-- CreateTable
+CREATE TABLE `naf_bonus` (
+    `id` INTEGER NOT NULL AUTO_INCREMENT,
+    `id_merchant_transaction` INTEGER NOT NULL,
+    `id_merchant` INTEGER NOT NULL,
+    `montant` INTEGER NOT NULL,
+
+    PRIMARY KEY (`id`)
+) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+
+-- CreateTable
+CREATE TABLE `naf_clients` (
+    `ID_CLIENT` INTEGER NOT NULL AUTO_INCREMENT,
+    `MSISDN` VARCHAR(50) NOT NULL,
+    `GENDER` VARCHAR(50) NOT NULL,
+    `BIRTH_DATE` VARCHAR(15) NOT NULL,
+    `TITLE` VARCHAR(50) NOT NULL,
+    `FIRST_NAME` VARCHAR(50) NOT NULL,
+    `LAST_NAME` VARCHAR(50) NOT NULL,
+
+    PRIMARY KEY (`ID_CLIENT`)
+) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+
+-- CreateTable
+CREATE TABLE `naf_paiements` (
+    `ID_PAIEMENT` INTEGER NOT NULL AUTO_INCREMENT,
+    `ID_SOUSCRIPTION` INTEGER NOT NULL,
+    `MONTANT_PAIEMENT` BIGINT NOT NULL,
+    `DATE_PAIEMENT` DATE NOT NULL,
+    `REFERENCE_PAIEMENT` VARCHAR(100) NOT NULL,
+    `ETAT_PAIEMENT` VARCHAR(50) NOT NULL,
+
+    PRIMARY KEY (`ID_PAIEMENT`)
+) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+
+-- CreateTable
+CREATE TABLE `naf_resiliation` (
+    `id` INTEGER NOT NULL AUTO_INCREMENT,
+    `id_souscription` VARCHAR(11) NOT NULL,
+    `msisdn` VARCHAR(20) NOT NULL,
+    `date_resiliation` VARCHAR(10) NOT NULL,
+
+    PRIMARY KEY (`id`)
+) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+
+-- CreateTable
+CREATE TABLE `naf_retraits` (
+    `ID_RETRAIT` INTEGER NOT NULL AUTO_INCREMENT,
+    `ID_SOUSCRIPTION` INTEGER NOT NULL,
+    `MONTANT_RETRAIT` BIGINT NOT NULL,
+    `DATE_RETRAIT` DATE NOT NULL,
+    `REFERENCE_RETRAIT` VARCHAR(50) NOT NULL,
+
+    PRIMARY KEY (`ID_RETRAIT`)
+) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+
+-- CreateTable
+CREATE TABLE `naf_souscriptions` (
+    `ID_SOUSCRIPTION` INTEGER NOT NULL AUTO_INCREMENT,
+    `ID_CLIENT` INTEGER NOT NULL,
+    `ID_BENEFICIAIRE` INTEGER NOT NULL,
+    `MONTANT_SOUSCRIPTION` BIGINT NOT NULL,
+    `DATE_SOUSCRIPTION` DATE NOT NULL,
+    `ETAT_SOUSCRIPTION` VARCHAR(50) NOT NULL,
+    `REFERENCE_SOUSCRIPTION` VARCHAR(100) NOT NULL,
+    `PROCHAIN_PAIEMENT` DATE NOT NULL,
+    `NUMERO_POLICE` VARCHAR(50) NULL,
+
+    PRIMARY KEY (`ID_SOUSCRIPTION`)
+) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+
+-- CreateTable
+CREATE TABLE `nep_beneficiaires` (
+    `ID_BENEFICIAIRE` INTEGER NOT NULL AUTO_INCREMENT,
+    `NOM_BENEFICIAIRE` VARCHAR(50) NOT NULL,
+    `TELEPHONE_BENEFICIAIRE` VARCHAR(50) NOT NULL,
+    `TYPE_BENEFICIAIRE` VARCHAR(50) NOT NULL,
+
+    PRIMARY KEY (`ID_BENEFICIAIRE`)
+) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+
+-- CreateTable
+CREATE TABLE `nep_bonus` (
+    `id` INTEGER NOT NULL AUTO_INCREMENT,
+    `id_merchant_transaction` INTEGER NOT NULL,
+    `id_merchant` INTEGER NOT NULL,
+    `montant` INTEGER NOT NULL,
+
+    PRIMARY KEY (`id`)
+) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+
+-- CreateTable
+CREATE TABLE `nep_clients` (
+    `ID_CLIENT` INTEGER NOT NULL AUTO_INCREMENT,
+    `MSISDN` VARCHAR(50) NOT NULL,
+    `GENDER` VARCHAR(50) NOT NULL,
+    `BIRTH_DATE` VARCHAR(15) NOT NULL,
+    `TITLE` VARCHAR(50) NOT NULL,
+    `FIRST_NAME` VARCHAR(50) NOT NULL,
+    `LAST_NAME` VARCHAR(50) NOT NULL,
+
+    PRIMARY KEY (`ID_CLIENT`)
+) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+
+-- CreateTable
+CREATE TABLE `nep_paiements` (
+    `ID_PAIEMENT` INTEGER NOT NULL AUTO_INCREMENT,
+    `ID_SOUSCRIPTION` INTEGER NOT NULL,
+    `MONTANT_PAIEMENT` BIGINT NOT NULL,
+    `DATE_PAIEMENT` DATE NOT NULL,
+    `REFERENCE_PAIEMENT` VARCHAR(255) NOT NULL,
+    `ETAT_PAIEMENT` VARCHAR(50) NOT NULL,
+    `prime` VARCHAR(50) NOT NULL,
+
+    PRIMARY KEY (`ID_PAIEMENT`)
+) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+
+-- CreateTable
+CREATE TABLE `nep_retraits` (
+    `ID_RETRAIT` INTEGER NOT NULL AUTO_INCREMENT,
+    `ID_SOUSCRIPTION` INTEGER NOT NULL,
+    `MONTANT_RETRAIT` BIGINT NOT NULL,
+    `DATE_RETRAIT` DATE NOT NULL,
+    `REFERENCE_RETRAIT` VARCHAR(50) NOT NULL,
+    `TYPE_RETRAIT` VARCHAR(255) NOT NULL,
+
+    PRIMARY KEY (`ID_RETRAIT`)
+) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+
+-- CreateTable
+CREATE TABLE `nep_souscriptions` (
+    `ID_SOUSCRIPTION` INTEGER NOT NULL AUTO_INCREMENT,
+    `ID_CLIENT` INTEGER NOT NULL,
+    `ID_BENEFICIAIRE` INTEGER NOT NULL,
+    `MONTANT_SOUSCRIPTION` BIGINT NOT NULL,
+    `DATE_SOUSCRIPTION` DATE NOT NULL,
+    `ETAT_SOUSCRIPTION` VARCHAR(50) NOT NULL,
+    `REFERENCE_SOUSCRIPTION` VARCHAR(100) NOT NULL,
+    `PROCHAIN_PAIEMENT` DATE NOT NULL,
+    `NUMERO_POLICE` VARCHAR(50) NULL,
+
+    PRIMARY KEY (`ID_SOUSCRIPTION`)
+) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+
+-- CreateTable
+CREATE TABLE `nsia_autres_produits` (
+    `ID_SOUSCRIPTION` INTEGER NOT NULL,
+    `NUMERO_POLICE` VARCHAR(50) NOT NULL,
+    `MONTANT` VARCHAR(50) NOT NULL,
+    `NOM_PRODUIT` VARCHAR(50) NOT NULL,
+    `PERIODE_FACTURE` VARCHAR(50) NOT NULL,
+    `ETAT_PAIEMENT` VARCHAR(50) NOT NULL
+) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+
+-- CreateTable
+CREATE TABLE `password_reset_tokens` (
+    `email` VARCHAR(255) NOT NULL,
+    `token` VARCHAR(255) NOT NULL,
+    `created_at` TIMESTAMP(0) NULL
+) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+
+-- CreateTable
+CREATE TABLE `password_resets` (
+    `email` VARCHAR(255) NOT NULL,
+    `token` VARCHAR(255) NOT NULL,
+    `created_at` TIMESTAMP(0) NULL
+) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+
+-- CreateTable
+CREATE TABLE `personal_access_tokens` (
+    `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+    `tokenable_type` VARCHAR(255) NOT NULL,
+    `tokenable_id` BIGINT UNSIGNED NOT NULL,
+    `name` VARCHAR(255) NOT NULL,
+    `token` VARCHAR(64) NOT NULL,
+    `abilities` TEXT NULL,
+    `last_used_at` TIMESTAMP(0) NULL,
+    `expires_at` TIMESTAMP(0) NULL,
+    `created_at` TIMESTAMP(0) NULL,
+    `updated_at` TIMESTAMP(0) NULL,
+
+    PRIMARY KEY (`id`)
+) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+
+-- CreateTable
+CREATE TABLE `type_merchant` (
+    `id` INTEGER NOT NULL AUTO_INCREMENT,
+    `libelle` VARCHAR(25) NOT NULL,
+
+    PRIMARY KEY (`id`)
+) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+
+-- CreateTable
+CREATE TABLE `upload` (
+    `id` INTEGER UNSIGNED NOT NULL AUTO_INCREMENT,
+    `filename` VARCHAR(191) NULL,
+    `created_at` TIMESTAMP(0) NULL,
+    `updated_at` TIMESTAMP(0) NULL,
+
+    PRIMARY KEY (`id`)
+) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+
+-- CreateTable
+CREATE TABLE `users` (
+    `id` INTEGER UNSIGNED NOT NULL AUTO_INCREMENT,
+    `name` VARCHAR(255) NOT NULL,
+    `email` VARCHAR(255) NOT NULL,
+    `email_verified_at` TIMESTAMP(0) NULL,
+    `password` VARCHAR(255) NOT NULL,
+    `user_group` INTEGER NOT NULL,
+    `role_level` INTEGER NOT NULL,
+    `last_login_date` DATE NOT NULL,
+    `activity_flag` INTEGER NOT NULL,
+    `postname` VARCHAR(255) NOT NULL,
+    `code` VARCHAR(255) NOT NULL,
+    `remember_token` VARCHAR(100) NULL,
+    `created_at` TIMESTAMP(0) NULL,
+    `updated_at` TIMESTAMP(0) NULL,
+
+    PRIMARY KEY (`id`)
+) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+
