@@ -66,15 +66,16 @@ model jobs {
 }
 
 model merchant {
-  id            Int      @id @default(autoincrement())
-  noms_prenoms  String   @db.VarChar(100)
-  phoneNo       String   @db.VarChar(25)
-  commission    String   @db.VarChar(255)
+  id            Int       @id @default(autoincrement())
+  noms_prenoms  String    @db.VarChar(100)
+  phoneNo       String    @db.VarChar(25)
+  commission    String    @db.VarChar(255)
   id_equipe     Int
   type_merchant Int
-  status        Int      @default(1)
-  created_at    DateTime @default(dbgenerated("('2019-08-29 00:00:00')")) @db.Timestamp(0)
-  updated_at    DateTime @default(dbgenerated("('2019-08-29 00:00:00')")) @db.Timestamp(0)
+  status        Int       @default(1)
+  created_at    DateTime  @default(dbgenerated("('2019-08-29 00:00:00')")) @db.Timestamp(0)
+  updated_at    DateTime  @default(dbgenerated("('2019-08-29 00:00:00')")) @db.Timestamp(0)
+  deleted_at    DateTime? @db.Timestamp(0)
 }
 
 model merchant_transactions {
@@ -286,6 +287,7 @@ model users {
   remember_token    String?   @db.VarChar(100)
   created_at        DateTime? @db.Timestamp(0)
   updated_at        DateTime? @db.Timestamp(0)
+  deleted_at        DateTime? @db.Timestamp(0)
 }
 
 /// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
