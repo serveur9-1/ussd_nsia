@@ -159,6 +159,11 @@ const blebleCustomerPay = {
 			};
 		}
 		
+		// Logic to add: Calculate fees (5%) and total
+		const fee = Math.round((amount * 5) / 100);
+		const total = amount + fee;
+
+		/* previoisly replaced
 		const plan = {
 			...data.plan,
 			amount,
@@ -166,18 +171,39 @@ const blebleCustomerPay = {
 				...data.plan.fee,
 				value: utilitiesMaths.calculateFee(amount, data.plan.fee.value)
 			}
-		}
+		}*/
 		
+		const plan = {
+			...data.plan,
+			amount,
+			fee: {
+				...data.plan.fee,
+				value: fee // Injecting the 5% fee here
+			}
+		}
+	
+
 		const payload = {
 			...data,
 			plan
 		}
 		
+		const responseMessage = `Votre demande de paiement libre de ${amount.toLocaleString()} FCFA, frais 5% (${fee.toLocaleString()} FCFA) Total: ${total.toLocaleString()} FCFA est en cours de traitement, Vous recevrez un message pour effectuer le paiement des frais`;
+
+		/* previously replaced
 		return {
 			response: confirm.text(plan),
 			nextStep: 'bleble_pay_confirm_payment_details_customer',
 			updatedData: payload,
+		};*/
+
+		return {
+			response: responseMessage,
+			nextStep: 'bleble_pay_confirm_payment_details_customer', // SET TO NULL IF THIS IS THE END OF THE USSD FLOW
+			updatedData: payload,
 		};
+	
+
 	}
 }
 

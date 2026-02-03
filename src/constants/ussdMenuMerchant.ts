@@ -134,8 +134,10 @@ const ussdMenuMerchant = {
 							if (plan.autoDebit) {
 								return ussdMenuMerchant.bleble.children.pay.children.plan.children.choose_auto_debit_date.text()
 							}
-							
-							return `Votre demande de paiement "${plan.label.toLowerCase()}" d'un montant de ${(plan.amount + plan.fee.value).toLocaleString()}F frais inclus est en cours de traitement. Vous allez recevoir un sms.\nComposez *133# puis 1 et suivez les indications pour payer.`;
+							//previously replaced
+							//return `Votre demande de paiement "${plan.label.toLowerCase()}" d'un montant de ${(plan.amount + plan.fee.value).toLocaleString()}F frais inclus est en cours de traitement. Vous allez recevoir un sms.\nComposez *133# puis 1 et suivez les indications pour payer.`;
+							return `Votre demande de paiement de ${plan.amount.toLocaleString()}F, frais: ${plan.fee.value.toLocaleString()} F, Total: ${(plan.amount + plan.fee.value).toLocaleString()} F est en cours de traitement, Vous recevrez un message pour effectuer le paiement des frais`;
+
 						},
 						messages: {
 							unsubscribe: (product: Product) => `Le client ne dispose pas de contrat ${product}. Veuillez procéder à une souscription".\n${thank}`,
@@ -194,7 +196,9 @@ const ussdMenuMerchant = {
 									return `Formule: ${plan.label}\nMontant: ${total.toLocaleString()} Fcfa\n${autoDebitInfo}\n1. Confirmer\n${back}`;
 								},
 								message: {
-									success: (plan: Plan) => `Votre demande de paiement "${plan.label.toLowerCase()}" d'un montant de ${((plan?.amount || 0) + plan.fee.value).toLocaleString()} Fcfa est en cours de traitement. Vous allez recevoir un sms. Composez *133# puis 1 et suivez les indications pour payer.`,
+									//previously replaced
+									//success: (plan: Plan) => `Votre demande de paiement "${plan.label.toLowerCase()}" d'un montant de ${((plan?.amount || 0) + plan.fee.value).toLocaleString()} Fcfa est en cours de traitement. Vous allez recevoir un sms. Composez *133# puis 1 et suivez les indications pour payer.`,
+									success: (plan: Plan) => `Votre demande de paiement de ${(plan.amount || 0).toLocaleString()}F, frais: ${plan.fee.value.toLocaleString()} F, Total: ${((plan.amount || 0) + plan.fee.value).toLocaleString()} F est en cours de traitement, Vous recevrez un message pour effectuer le paiement des frais`,
 									invalide: (plan: Plan) => `${ussdMenuMerchant.chooseInvalide}${ussdMenuMerchant.bleble.children.pay.children.plan.children.confirm.text(plan)}`,
 									notArrive: (date: string) => `Le prochain paiement ne peut intervenir avant le ${date}\n${thank}`
 								}

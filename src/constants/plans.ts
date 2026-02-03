@@ -48,7 +48,7 @@ export const customerPlansBleble: Plans = {
 		amount: undefined,
 		fee: {
 			type: 'percent',
-			value: 10
+			value: 5 //changed from 10 to 5
 		},
 		autoDebit: {
 			enabled: false,
