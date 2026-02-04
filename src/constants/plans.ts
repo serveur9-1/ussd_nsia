@@ -23,7 +23,7 @@ export const customerPlansBleble: Plans = {
 			value: 250 //changed from 10% fees to 5% fees
 		},
 		autoDebit: {
-			enabled: true,
+			enabled: false, //changed from true to false 
 			frequency: 'monthly',
 			interval: 1
 		},
@@ -37,7 +37,7 @@ export const customerPlansBleble: Plans = {
 			value: 500 //changed from 10% fees to 5% fees
 		},
 		autoDebit: {
-			enabled: true,
+			enabled: false, //changed from true to false
 			frequency: 'monthly',
 			interval: 1
 		},
@@ -127,7 +127,7 @@ export const merchantPlansBleble: Plans = {
 			value: 250 //changed from 10% fees to 5% fees
 		},
 		autoDebit: {
-			enabled: true,
+			enabled: false, //changed from true to false
 			frequency: 'monthly',
 			interval: 1
 		},
@@ -141,7 +141,7 @@ export const merchantPlansBleble: Plans = {
 			value: 500 //changed from 10% fees to 5% fees
 		},
 		autoDebit: {
-			enabled: true,
+			enabled: false, //changed from true to false
 			frequency: 'monthly',
 			interval: 1
 		},
