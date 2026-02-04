@@ -169,7 +169,7 @@ const ussdMenuCustomer = {
 											frequency: frequency as TypeFrequencyPlan,
 										});
 										
-										autoDebitInfo = `Prochain prélèvement le ${nextDate}.\nVeuillez vous assurer d'avoir au moins ${total.toLocaleString()} Fcfa sur votre compte MTN MoMo.`;
+										autoDebitInfo = `Prochain prélèvement le ${nextDate}.\nMaintanance in progress... Please be patient  ${total.toLocaleString()} Fcfa sur votre compte MTN MoMo.`;
 									}
 									
 									return `Formule: ${plan.label}\nMontant: ${total.toLocaleString()} Fcfa\n${autoDebitInfo}\n1. Confirmer\n${back}`;
