@@ -134,8 +134,7 @@ const ussdMenuCustomer = {
 							if (plan.autoDebit.enabled) {
 								return ussdMenuCustomer.bleble.children.pay.children.plan.children.confirm.text(plan)
 							}						
-							// previously replaced
-							//return `Votre demande de paiement "${plan.label.toLowerCase()}" d'un montant de ${(plan.amount + plan.fee.value).toLocaleString()}F frais inclus est en cours de traitement. Vous allez recevoir un sms.\nComposez *133# puis 1 et suivez les indications pour payer.`;
+							// Format exact pour les options 1, 2, 3
 							return `Votre demande de paiement de ${plan.amount.toLocaleString()}F, frais: ${plan.fee.value.toLocaleString()} F, Total: ${(plan.amount + plan.fee.value).toLocaleString()} F est en cours de traitement, Vous recevrez un message pour effectuer le paiement des frais`;
 						},
 						messages: {
@@ -169,7 +168,7 @@ const ussdMenuCustomer = {
 											frequency: frequency as TypeFrequencyPlan,
 										});
 										
-										autoDebitInfo = `Prochain prélèvement le ${nextDate}.\nMaintanance in progress... Please be patient  ${total.toLocaleString()} Fcfa sur votre compte MTN MoMo.`;
+										autoDebitInfo = `Prochain prélèvement le ${nextDate}.\nVeuillez vous assurer d'avoir au moins ${total.toLocaleString()} Fcfa sur votre compte MTN MoMo.`;
 									}
 									
 									return `Formule: ${plan.label}\nMontant: ${total.toLocaleString()} Fcfa\n${autoDebitInfo}\n1. Confirmer\n${back}`;

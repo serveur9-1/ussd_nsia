@@ -11,6 +11,27 @@ import {merchantPlansBleble} from "../../../../../constants/plans";
 const plans = ussdMenuCustomer.bleble.children.pay.data.plans
 const confirm = ussdMenuCustomer.bleble.children.pay.children.plan.children.confirm
 
+/**
+ * Message d'information sur les bonus de paiement BlèBlè
+ * affiché lorsque le client choisit une formule 1 / 2 / 3.
+ */
+const getBleblePaymentBonusMessage = (plan: Plan): string | null => {
+	if (!plan.amount) {
+		return null;
+	}
+	
+	switch (plan.amount) {
+		case 1500:
+			return "Bonus paiement: Avec l'option 1, vous bénéficiez des avantages de fidélité BlèBlè.";
+		case 5000:
+			return "Bonus paiement: Avec l'option 2 (5 000 Fcfa), vous bénéficiez d'un bonus supérieur sur vos versements.";
+		case 10000:
+			return "Bonus paiement: Avec l'option 3 (10 000 Fcfa), vous bénéficiez du bonus maximum sur vos versements.";
+		default:
+			return null;
+	}
+}
+
 const blebleCustomerPay = {
 	enterPhoneNumber: async (sessionId: string, input: string, data: Record<string, any>) => {
 		if (input === "__REPEAT__") {
@@ -72,6 +93,10 @@ const blebleCustomerPay = {
 		if (subscription && plan) {
 			const payload = {...data, plan, subscription}
 			
+			const bonusMessage = getBleblePaymentBonusMessage(plan);
+			const confirmText = confirm.text(plan);
+			const responseText = bonusMessage ? `${bonusMessage}\n${confirmText}` : confirmText;
+			
 			if (subscription.ETAT_SOUSCRIPTION === '00') {
 				return {
 					response: `${ussdMenuCustomer.bleble.children.pay.children.plan.messages.alreadySubscribe}\nInfos: 22419800, ${thank}`,
@@ -83,14 +108,14 @@ const blebleCustomerPay = {
 			if (subscription.ETAT_SOUSCRIPTION === '01') {
 				if (plan?.amount && !plan?.autoDebit.enabled) {
 					return {
-						response: confirm.text(plan),
+						response: responseText,
 						nextStep: 'bleble_pay_confirm_payment_details_customer',
 						updatedData: payload,
 					};
 				}
 				
 				return {
-					response: plan?.amount ? confirm.text(plan) : ussdMenuCustomer.bleble.children.pay.children.custom_amount.text,
+					response: plan?.amount ? responseText : ussdMenuCustomer.bleble.children.pay.children.custom_amount.text,
 					nextStep: plan?.amount ? 'bleble_pay_confirm_payment_details_customer' : 'bleble_pay_custom_amount_customer',
 					updatedData: payload,
 				};
@@ -188,7 +213,7 @@ const blebleCustomerPay = {
 			plan
 		}
 		
-		const responseMessage = `Votre demande de paiement libre de ${amount.toLocaleString()} FCFA, frais 5% (${fee.toLocaleString()} FCFA) Total: ${total.toLocaleString()} FCFA est en cours de traitement, Vous recevrez un message pour effectuer le paiement des frais`;
+		const responseMessage = `Votre demande de paiement libre de ${amount.toLocaleString()} FCFA, frais 5% (du montant payé) Total: ${total.toLocaleString()} FCFA est en cours de traitement, Vous recevrez un message pour effectuer le paiement des frais`;
 
 		/* previously replaced
 		return {

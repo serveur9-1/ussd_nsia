@@ -26,6 +26,27 @@ const plans = Object.fromEntries(
 );
 const confirm = ussdMenuCustomer.bleble.children.pay.children.plan.children.confirm
 
+/**
+ * Message d'information sur les bonus de paiement BlèBlè
+ * affiché lorsque le client choisit une formule 1 / 2 / 3.
+ */
+const getBleblePaymentBonusMessage = (plan: Plan): string | null => {
+	if (!plan.amount) {
+		return null;
+	}
+	
+	switch (plan.amount) {
+		case 1500:
+			return "Bonus paiement: Avec l'option 1, vous bénéficiez des avantages de fidélité BlèBlè.";
+		case 5000:
+			return "Bonus paiement: Avec l'option 2 (5 000 Fcfa), vous bénéficiez d'un bonus supérieur sur vos versements.";
+		case 10000:
+			return "Bonus paiement: Avec l'option 3 (10 000 Fcfa), vous bénéficiez du bonus maximum sur vos versements.";
+		default:
+			return null;
+	}
+}
+
 const blebleCustomerSubscription = {
 	blebleSubscriptionStart: async (sessionId: string, input: string, data: Record<string, any>) => {
 		if (input === "__REPEAT__") {
@@ -189,8 +210,12 @@ const blebleCustomerSubscription = {
 		
 		const updatedData = {...data, plan}
 		
+		const bonusMessage = getBleblePaymentBonusMessage(plan);
+		const confirmText = confirm.text(plan);
+		const responseText = bonusMessage ? `${bonusMessage}\n${confirmText}` : confirmText;
+		
 		return {
-			response: confirm.text(plan),
+			response: responseText,
 			nextStep: 'bleble_subscription_bleble_confirmPlan_customer',
 			updatedData,
 		};
