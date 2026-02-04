@@ -19,11 +19,13 @@ import {Plan, TypeFrequencyPlan} from "../../../../../types/plan";
 import {AutoDebitStatus} from "../../../../../types/models/autoDebitSchedule";
 import {NepSouscription} from "../../../../../types/models/nepSouscription";
 
-const plans = Object.fromEntries(
-	Object.values(ussdMenuCustomer.bleble.children.pay.data.plans)
-		.filter(plan => plan.autoDebit.enabled)
-		.map((plan, index) => [String(index + 1), plan])
-);
+// For subscription, show plans 2, 3, and 4 (skip plan 1 which is weekly)
+const allPlans = ussdMenuCustomer.bleble.children.pay.data.plans;
+const plans = {
+	"1": allPlans["2"], // Par mois (opt.1): 5000
+	"2": allPlans["3"], // Par mois (opt.2): 10000
+	"3": allPlans["4"], // Paiement libre
+};
 const confirm = ussdMenuCustomer.bleble.children.pay.children.plan.children.confirm
 
 /**
