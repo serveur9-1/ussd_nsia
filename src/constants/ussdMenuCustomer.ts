@@ -133,9 +133,26 @@ const ussdMenuCustomer = {
 							
 							if (plan.autoDebit.enabled) {
 								return ussdMenuCustomer.bleble.children.pay.children.plan.children.confirm.text(plan)
-							}						
-							// Format exact pour les options 1, 2, 3
-							return `Votre demande de paiement de ${plan.amount.toLocaleString()}F, frais: ${plan.fee.value.toLocaleString()} F, Total: ${(plan.amount + plan.fee.value).toLocaleString()} F est en cours de traitement, Vous recevrez un message pour effectuer le paiement des frais`;
+							}
+							
+							// Format exact selon le montant
+							const amountStr = plan.amount != null ? plan.amount.toLocaleString() : '';
+							const feeStr = plan.fee.value.toLocaleString();
+							const totalStr = (Number(plan.amount || 0) + plan.fee.value).toLocaleString();
+							
+							if (plan.amount === 5000) {
+								// Option 1: 5000 Fcfa - Format exact
+								return `Votre demande de paiement\nde ${amountStr}F, frais: ${feeStr} F,\nTotal: ${totalStr} F est en cours\nde traitement,\nVous recevrez un message\npour effectuer le paiement\ndes frais`;
+							} else if (plan.amount === 10000) {
+								// Option 2: 10000 Fcfa - Format exact
+								return `Votre demande de paiement de\n${amountStr}F, frais: ${feeStr} F, Total: ${totalStr}\nF est en cours de traitement,\nVous recevrez un message pour\neffectuer le paiement des frais`;
+							} else if (plan.fee.type === 'percent' || plan.action === 'PAY-1-MONTH-FREE') {
+								// Option 3: Paiement libre - Format exact (après confirmation, success depuis momoPay)
+								return `Votre demande de paiement libre\nde ${amountStr} FCFA, frais 5% (du\nmontant payé) Total: ${totalStr} FCFA\nest en cours de traitement,\nVous recevrez un message pour\neffectuer le paiement des frais`;
+							}
+							
+							// Format par défaut pour autres montants
+							return `Votre demande de paiement de ${amountStr}F, frais: ${feeStr} F, Total: ${totalStr} F est en cours de traitement, Vous recevrez un message pour effectuer le paiement des frais`;
 						},
 						messages: {
 							unsubscribe: (product: Product) => `Veuillez d'abord souscrire à une assurance ${product}.\n${thank}`,

@@ -212,12 +212,11 @@ const blebleCustomerSubscription = {
 		
 		const updatedData = {...data, plan}
 		
-		const bonusMessage = getBleblePaymentBonusMessage(plan);
+		// Remove bonus message from confirmation screen - show only confirmation text
 		const confirmText = confirm.text(plan);
-		const responseText = bonusMessage ? `${bonusMessage}\n${confirmText}` : confirmText;
 		
 		return {
-			response: responseText,
+			response: confirmText,
 			nextStep: 'bleble_subscription_bleble_confirmPlan_customer',
 			updatedData,
 		};

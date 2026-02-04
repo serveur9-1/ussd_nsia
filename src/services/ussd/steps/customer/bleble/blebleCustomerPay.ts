@@ -93,9 +93,8 @@ const blebleCustomerPay = {
 		if (subscription && plan) {
 			const payload = {...data, plan, subscription}
 			
-			const bonusMessage = getBleblePaymentBonusMessage(plan);
+			// Remove bonus message from confirmation screen - show only confirmation text
 			const confirmText = confirm.text(plan);
-			const responseText = bonusMessage ? `${bonusMessage}\n${confirmText}` : confirmText;
 			
 			if (subscription.ETAT_SOUSCRIPTION === '00') {
 				return {
@@ -108,14 +107,14 @@ const blebleCustomerPay = {
 			if (subscription.ETAT_SOUSCRIPTION === '01') {
 				if (plan?.amount && !plan?.autoDebit.enabled) {
 					return {
-						response: responseText,
+						response: confirmText,
 						nextStep: 'bleble_pay_confirm_payment_details_customer',
 						updatedData: payload,
 					};
 				}
 				
 				return {
-					response: plan?.amount ? responseText : ussdMenuCustomer.bleble.children.pay.children.custom_amount.text,
+					response: plan?.amount ? confirmText : ussdMenuCustomer.bleble.children.pay.children.custom_amount.text,
 					nextStep: plan?.amount ? 'bleble_pay_confirm_payment_details_customer' : 'bleble_pay_custom_amount_customer',
 					updatedData: payload,
 				};
@@ -213,7 +212,8 @@ const blebleCustomerPay = {
 			plan
 		}
 		
-		const responseMessage = `Votre demande de paiement libre de ${amount.toLocaleString()} FCFA, frais 5% (du montant payé) Total: ${total.toLocaleString()} FCFA est en cours de traitement, Vous recevrez un message pour effectuer le paiement des frais`;
+		// Format exact pour paiement libre (Option 3)
+		const responseMessage = `Votre demande de paiement libre\nde ${amount.toLocaleString()} FCFA, frais 5% (du\nmontant payé) Total: ${total.toLocaleString()} FCFA\nest en cours de traitement,\nVous recevrez un message pour\neffectuer le paiement des frais`;
 
 		/* previously replaced
 		return {
