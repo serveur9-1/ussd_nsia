@@ -20,7 +20,7 @@ export const customerPlansBleble: Plans = {
 		amount: 5000,
 		fee: {
 			type: 'fix',
-			value: 500
+			value: 250 //changed from 10% fees to 5% fees
 		},
 		autoDebit: {
 			enabled: true,
@@ -34,7 +34,7 @@ export const customerPlansBleble: Plans = {
 		amount: 10000,
 		fee: {
 			type: 'fix',
-			value: 1000
+			value: 500 //changed from 10% fees to 5% fees
 		},
 		autoDebit: {
 			enabled: true,
@@ -48,7 +48,7 @@ export const customerPlansBleble: Plans = {
 		amount: undefined,
 		fee: {
 			type: 'percent',
-			value: 5 //changed from 10 to 5
+			value: 5 //changed from 10% fees to 5% fees 
 		},
 		autoDebit: {
 			enabled: false,
@@ -124,7 +124,7 @@ export const merchantPlansBleble: Plans = {
 		amount: 5000,
 		fee: {
 			type: 'fix',
-			value: 500
+			value: 250 //changed from 10% fees to 5% fees
 		},
 		autoDebit: {
 			enabled: true,
@@ -138,7 +138,7 @@ export const merchantPlansBleble: Plans = {
 		amount: 10000,
 		fee: {
 			type: 'fix',
-			value: 1000
+			value: 500 //changed from 10% fees to 5% fees
 		},
 		autoDebit: {
 			enabled: true,
@@ -152,7 +152,7 @@ export const merchantPlansBleble: Plans = {
 		amount: undefined,
 		fee: {
 			type: 'percent',
-			value: 10
+			value: 5 //changed from 10% fees to 5% fees
 		},
 		autoDebit: {
 			enabled: false,

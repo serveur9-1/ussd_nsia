@@ -137,7 +137,6 @@ const ussdMenuMerchant = {
 							//previously replaced
 							//return `Votre demande de paiement "${plan.label.toLowerCase()}" d'un montant de ${(plan.amount + plan.fee.value).toLocaleString()}F frais inclus est en cours de traitement. Vous allez recevoir un sms.\nComposez *133# puis 1 et suivez les indications pour payer.`;
 							return `Votre demande de paiement de ${plan.amount.toLocaleString()}F, frais: ${plan.fee.value.toLocaleString()} F, Total: ${(plan.amount + plan.fee.value).toLocaleString()} F est en cours de traitement, Vous recevrez un message pour effectuer le paiement des frais`;
-
 						},
 						messages: {
 							unsubscribe: (product: Product) => `Le client ne dispose pas de contrat ${product}. Veuillez procéder à une souscription".\n${thank}`,
