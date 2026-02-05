@@ -175,7 +175,7 @@ const ussdMenuCustomer = {
 								text: (plan: Plan) => {
 									const total = Number(plan.amount) + plan.fee.value;
 									
-									let autoDebitInfo = "Sans prélèvement automatique";
+									let autoDebitInfo = "Par prélèvement automatique du 01er au 05 du mois";
 									
 									if (plan.autoDebit.enabled) {
 										const {frequency, interval} = plan.autoDebit;
