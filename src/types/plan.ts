@@ -26,4 +26,5 @@ export type Plans = {
 	"2": Plan;
 	"3": Plan;
 	"4": Plan;
+	"5"?: Plan; // optional for IFOH which only has 1-3
 };

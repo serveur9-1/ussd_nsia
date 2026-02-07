@@ -145,7 +145,7 @@ const blebleMerchantPay = {
 		let amount = 0
 		
 		if (input === "__REPEAT__") {
-			data.plan = merchantPlansBleble['4']
+			data.plan = merchantPlansBleble['5'] // Paiement libre
 			
 			return {
 				response: customAmount.text,

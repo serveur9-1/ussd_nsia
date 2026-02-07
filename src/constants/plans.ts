@@ -16,39 +16,53 @@ export const customerPlansBleble: Plans = {
 		action: 'PAY-1-WEEK'
 	},
 	"2": {
-		label: "Par mois (opt.1)",
-		amount: 5000,
+		label: "Par mois (opt. 1)",
+		amount: 2500,
 		fee: {
 			type: 'fix',
-			value: 250 //changed from 10% fees to 5% fees
+			value: 125 // 5% of 2500
 		},
 		autoDebit: {
-			enabled: false, //changed from true to false 
+			enabled: false,
 			frequency: 'monthly',
 			interval: 1
 		},
 		action: 'PAY-1-MONTH'
 	},
 	"3": {
-		label: "Par mois (opt.2)",
-		amount: 10000,
+		label: "Par mois (opt. 2)",
+		amount: 5000,
 		fee: {
 			type: 'fix',
-			value: 500 //changed from 10% fees to 5% fees
+			value: 250 // 5% fees
 		},
 		autoDebit: {
-			enabled: false, //changed from true to false
+			enabled: false,
 			frequency: 'monthly',
 			interval: 1
 		},
 		action: 'PAY-1-MONTH'
 	},
 	"4": {
+		label: "Par mois (opt. 3)",
+		amount: 10000,
+		fee: {
+			type: 'fix',
+			value: 500 // 5% fees
+		},
+		autoDebit: {
+			enabled: false,
+			frequency: 'monthly',
+			interval: 1
+		},
+		action: 'PAY-1-MONTH'
+	},
+	"5": {
 		label: "Paiement libre",
 		amount: undefined,
 		fee: {
 			type: 'percent',
-			value: 5 //changed from 10% fees to 5% fees 
+			value: 5
 		},
 		autoDebit: {
 			enabled: false,
@@ -120,39 +134,53 @@ export const merchantPlansBleble: Plans = {
 		action: 'PAY-1-WEEK-DIS'
 	},
 	"2": {
-		label: "Par mois (opt.1)",
-		amount: 5000,
+		label: "Par mois (opt. 1)",
+		amount: 2500,
 		fee: {
 			type: 'fix',
-			value: 250 //changed from 10% fees to 5% fees
+			value: 125 // 5% of 2500
 		},
 		autoDebit: {
-			enabled: false, //changed from true to false
+			enabled: false,
 			frequency: 'monthly',
 			interval: 1
 		},
 		action: 'PAY-1-MONTH-DIS'
 	},
 	"3": {
-		label: "Par mois (opt.2)",
-		amount: 10000,
+		label: "Par mois (opt. 2)",
+		amount: 5000,
 		fee: {
 			type: 'fix',
-			value: 500 //changed from 10% fees to 5% fees
+			value: 250
 		},
 		autoDebit: {
-			enabled: false, //changed from true to false
+			enabled: false,
 			frequency: 'monthly',
 			interval: 1
 		},
 		action: 'PAY-1-MONTH-DIS'
 	},
 	"4": {
+		label: "Par mois (opt. 3)",
+		amount: 10000,
+		fee: {
+			type: 'fix',
+			value: 500
+		},
+		autoDebit: {
+			enabled: false,
+			frequency: 'monthly',
+			interval: 1
+		},
+		action: 'PAY-1-MONTH-DIS'
+	},
+	"5": {
 		label: "Paiement libre",
 		amount: undefined,
 		fee: {
 			type: 'percent',
-			value: 5 //changed from 10% fees to 5% fees
+			value: 5
 		},
 		autoDebit: {
 			enabled: false,

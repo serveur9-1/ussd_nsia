@@ -19,12 +19,12 @@ import {Plan, TypeFrequencyPlan} from "../../../../../types/plan";
 import {AutoDebitStatus} from "../../../../../types/models/autoDebitSchedule";
 import {NepSouscription} from "../../../../../types/models/nepSouscription";
 
-// For subscription, show plans 2, 3, and 4 (skip plan 1 which is weekly)
+// For subscription: only 3 options - Par mois (opt. 1) 2500, (opt. 2) 5000, (opt. 3) 10000. No Paiement libre.
 const allPlans = ussdMenuCustomer.bleble.children.pay.data.plans;
 const plans = {
-	"1": allPlans["2"], // Par mois (opt.1): 5000
-	"2": allPlans["3"], // Par mois (opt.2): 10000
-	"3": allPlans["4"], // Paiement libre
+	"1": allPlans["2"], // Par mois (opt. 1): 2,500 Fcfa
+	"2": allPlans["3"], // Par mois (opt. 2): 5,000 Fcfa
+	"3": allPlans["4"], // Par mois (opt. 3): 10,000 Fcfa
 };
 const confirm = ussdMenuCustomer.bleble.children.pay.children.plan.children.confirm
 
@@ -38,8 +38,8 @@ const getBleblePaymentBonusMessage = (plan: Plan): string | null => {
 	}
 	
 	switch (plan.amount) {
-		case 1500:
-			return "Bonus paiement: Avec l'option 1, vous bénéficiez des avantages de fidélité BlèBlè.";
+		case 2500:
+			return "Bonus paiement: Avec l'option 1 (2 500 Fcfa), vous bénéficiez d'un bonus sur vos versements.";
 		case 5000:
 			return "Bonus paiement: Avec l'option 2 (5 000 Fcfa), vous bénéficiez d'un bonus supérieur sur vos versements.";
 		case 10000:

@@ -21,11 +21,13 @@ import utilitiesDate from "../../../../../utils/date";
 import {AutoDebitStatus} from "../../../../../types/models/autoDebitSchedule";
 import AutoDebitScheduleRepository from "../../../../../repositories/autoDebitScheduleRepository";
 
-const plans = Object.fromEntries(
-	Object.values(ussdMenuMerchant.bleble.children.pay.data.plans)
-		.filter(plan => plan.autoDebit.enabled)
-		.map((plan, index) => [String(index + 1), plan])
-);
+// For subscription: only 3 options - Par mois (opt. 1) 2500, (opt. 2) 5000, (opt. 3) 10000. No Paiement libre.
+const allPlansMerchant = ussdMenuMerchant.bleble.children.pay.data.plans;
+const plans = {
+	"1": allPlansMerchant["2"], // Par mois (opt. 1): 2,500 Fcfa
+	"2": allPlansMerchant["3"], // Par mois (opt. 2): 5,000 Fcfa
+	"3": allPlansMerchant["4"], // Par mois (opt. 3): 10,000 Fcfa
+};
 const confirm = ussdMenuMerchant.bleble.children.pay.children.plan.children.confirm
 
 const blebleSubscriptionMerchant = {

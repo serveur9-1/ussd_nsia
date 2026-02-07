@@ -140,11 +140,14 @@ const ussdMenuCustomer = {
 							const feeStr = plan.fee.value.toLocaleString();
 							const totalStr = (Number(plan.amount || 0) + plan.fee.value).toLocaleString();
 							
-							if (plan.amount === 5000) {
-								// Option 1: 5000 Fcfa - Format exact
+							if (plan.amount === 2500) {
+								// Par mois (opt. 1): 2,500 Fcfa
+								return `Votre demande de paiement\nde ${amountStr}F, frais: ${feeStr} F,\nTotal: ${totalStr} F est en cours\nde traitement,\nVous recevrez un message\npour effectuer le paiement\ndes frais`;
+							} else if (plan.amount === 5000) {
+								// Par mois (opt. 2): 5,000 Fcfa
 								return `Votre demande de paiement\nde ${amountStr}F, frais: ${feeStr} F,\nTotal: ${totalStr} F est en cours\nde traitement,\nVous recevrez un message\npour effectuer le paiement\ndes frais`;
 							} else if (plan.amount === 10000) {
-								// Option 2: 10000 Fcfa - Format exact
+								// Par mois (opt. 3): 10,000 Fcfa
 								return `Votre demande de paiement de\n${amountStr}F, frais: ${feeStr} F, Total: ${totalStr}\nF est en cours de traitement,\nVous recevrez un message pour\neffectuer le paiement des frais`;
 							} else if (plan.fee.type === 'percent' || plan.action === 'PAY-1-MONTH-FREE') {
 								// Option 3: Paiement libre - Format exact (après confirmation, success depuis momoPay)

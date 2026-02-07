@@ -22,11 +22,13 @@ const getBleblePaymentBonusMessage = (plan: Plan): string | null => {
 	
 	switch (plan.amount) {
 		case 1500:
-			return "Bonus paiement: Avec l'option 1, vous bénéficiez des avantages de fidélité BlèBlè.";
+			return "Bonus paiement: Avec l'option 1 (Par semaine), vous bénéficiez des avantages de fidélité BlèBlè.";
+		case 2500:
+			return "Bonus paiement: Avec l'option 2 (2 500 Fcfa), vous bénéficiez d'un bonus sur vos versements.";
 		case 5000:
-			return "Bonus paiement: Avec l'option 2 (5 000 Fcfa), vous bénéficiez d'un bonus supérieur sur vos versements.";
+			return "Bonus paiement: Avec l'option 3 (5 000 Fcfa), vous bénéficiez d'un bonus supérieur sur vos versements.";
 		case 10000:
-			return "Bonus paiement: Avec l'option 3 (10 000 Fcfa), vous bénéficiez du bonus maximum sur vos versements.";
+			return "Bonus paiement: Avec l'option 4 (10 000 Fcfa), vous bénéficiez du bonus maximum sur vos versements.";
 		default:
 			return null;
 	}
@@ -164,7 +166,7 @@ const blebleCustomerPay = {
 	},
 	customAmountPay: async (sessionid: string, input: string, data: Record<string, any>, req: Record<string, any>) => {
 		if (input === "__REPEAT__") {
-			data.plan = merchantPlansBleble['4']
+			data.plan = merchantPlansBleble['5'] // Paiement libre
 			
 			return {
 				response: ussdMenuCustomer.bleble.children.pay.children.custom_amount.text,
