@@ -13,8 +13,11 @@ import momoPay, {customerPayBleblePlan} from "../../../../payments/momoPay";
 import NepBeneficiairesRepository from "../../../../../repositories/nepBeneficiaireRepository";
 import NepSouscriptionsRepository from "../../../../../repositories/nepSouscriptionRepository";
 import AutoDebitScheduleRepository from "../../../../../repositories/autoDebitScheduleRepository";
+import ExternalSubscriptionSyncRepository from "../../../../../repositories/externalSubscriptionSyncRepository";
+import {buildEvoSyncPayload, syncEvoSubscription} from "../../../../integrations/evoSubscription";
 import {TypeProductCommission} from "../../../../../types/models/commission";
 import utilitiesDate from "../../../../../utils/date";
+import {logger} from "../../../../../utils/logger";
 import {Plan, TypeFrequencyPlan} from "../../../../../types/plan";
 import {AutoDebitStatus} from "../../../../../types/models/autoDebitSchedule";
 import {NepSouscription} from "../../../../../types/models/nepSouscription";
@@ -318,6 +321,29 @@ const blebleCustomerSubscription = {
 							status,
 							notified: false
 						});
+
+						const evoPayload = buildEvoSyncPayload({
+							product: "BLEBLE",
+							fullName: data.fullName,
+							birthDate: data.birthDate,
+							msisdn,
+							beneficiaryName: data.beneficiaryName,
+							primePeriodique: Number(plan.amount ?? 0),
+							duree: 1,
+							periodicite: "MENSUEL",
+						});
+						try {
+							await syncEvoSubscription(evoPayload);
+						} catch (error) {
+							logger.error("[EVO_SYNC_IMMEDIATE_ERROR][BLEBLE]", {error, reference});
+							await ExternalSubscriptionSyncRepository.insert({
+								product: "BLEBLE",
+								localReference: reference,
+								localSubscriptionId: Number(resultNepSubscription.data?.ID_SOUSCRIPTION),
+								msisdn,
+								payload: evoPayload
+							});
+						}
 						
 						return {
 							response: ussdMenuCustomer.bleble.children.subscription.children.beneficiary.phoneNumber.message.success,

@@ -5,6 +5,9 @@ import NafClientRepository from "../../../../../repositories/nafClientRepository
 import momoPay from "../../../../payments/momoPay";
 import NafBeneficiaireRepository from "../../../../../repositories/nafBeneficiaireRepository";
 import NafSouscriptionRepository from "../../../../../repositories/nafSouscriptionRepository";
+import ExternalSubscriptionSyncRepository from "../../../../../repositories/externalSubscriptionSyncRepository";
+import {buildEvoSyncPayload, syncEvoSubscription} from "../../../../integrations/evoSubscription";
+import {logger} from "../../../../../utils/logger";
 
 const ifohSubscription = ussdMenuCustomer.ifoh.children.subscription
 
@@ -251,6 +254,29 @@ const ifohSubscriptionMenu = {
 					})
 					
 					if (resultSubscription.status) {
+						const evoPayload = buildEvoSyncPayload({
+							product: "IFOH",
+							fullName: data.fullName,
+							birthDate: data.brithDate,
+							msisdn,
+							beneficiaryName: beneficiary.fullName,
+							primePeriodique: amount,
+							duree: 1,
+							periodicite: "MENSUEL",
+						});
+						try {
+							await syncEvoSubscription(evoPayload);
+						} catch (error) {
+							logger.error("[EVO_SYNC_IMMEDIATE_ERROR][IFOH]", {error, reference});
+							await ExternalSubscriptionSyncRepository.insert({
+								product: "IFOH",
+								localReference: reference,
+								localSubscriptionId: Number(resultSubscription.data?.ID_SOUSCRIPTION),
+								msisdn,
+								payload: evoPayload
+							});
+						}
+
 						return {
 							response: ifohSubscription.children.beneficiary.children.phoneNumber().message.success,
 							nextStep: null,
