@@ -69,6 +69,8 @@ const bleblePartialWithdraw = {
 				updatedData: data,
 			};
 		}
+
+		const montantRetrait: number = amountValidated.data;
 		
 		const reference = generateReference("NEP", "RETR", req.msisdn);
 		const now = new Date();
@@ -86,7 +88,7 @@ const bleblePartialWithdraw = {
 			};
 		}
 		
-		if (amountValidated.data > amountCanWithdraw) {
+		if (montantRetrait > amountCanWithdraw) {
 			return {
 				response: partialWithdraw.children.amount.message.maxAmount(amountCanWithdraw),
 				nextStep: 'bleble_partial_withdraw_amount_customer',
@@ -98,7 +100,7 @@ const bleblePartialWithdraw = {
 			ID_SOUSCRIPTION: subscription.ID_SOUSCRIPTION,
 			MSISDN: formatPhoneNumber(req.msisdn),
 			DATE_RETRAIT: now,
-			MONTANT_RETRAIT: amountValidated.data,
+			MONTANT_RETRAIT: montantRetrait,
 			REFERENCE_RETRAIT: reference,
 			TYPE_RETRAIT: 'RACHAT_PARTIEL'
 		});
@@ -107,14 +109,14 @@ const bleblePartialWithdraw = {
 			setImmediate(() => {
 				void queueEvoRachat({
 					msisdn: formatPhoneNumber(req.msisdn),
-					montant: amountValidated.data,
+					montant: montantRetrait,
 					typeRachat: "PARTIEL",
 					localReference: reference,
 					product: "BLEBLE"
 				});
 			});
 			return {
-				response: partialWithdraw.children.amount.message.success(amountValidated.data),
+				response: partialWithdraw.children.amount.message.success(montantRetrait),
 				nextStep: null,
 				updatedData: data,
 			};
