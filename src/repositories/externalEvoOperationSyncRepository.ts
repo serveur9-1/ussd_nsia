@@ -4,7 +4,7 @@ import {logger} from "../utils/logger";
 
 export default class ExternalEvoOperationSyncRepository {
 	static async insert(data: {
-		operationType: "PAYMENT" | "RACHAT";
+		operationType: "PAYMENT" | "RACHAT" | "CHANGE_BENEF";
 		product: string;
 		msisdn: string;
 		idempotencyKey: string;

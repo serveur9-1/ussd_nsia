@@ -3,15 +3,13 @@ import {formatPhoneNumber} from "../../utils/format";
 import {logger} from "../../utils/logger";
 import ExternalEvoOperationSyncRepository from "../../repositories/externalEvoOperationSyncRepository";
 import {EVO_BASE_URL, EVO_TIMEOUT_MS, evoAuthConfigured, evoLogin, logEvoSkip} from "./evoAuth";
+import {asRecord, resolveEvoContractForProduct, type EvoProductKey, PRODUCT_ID} from "./evoContractResolve";
+import {syncEvoChangeBeneficiary, type EvoChangeBeneficiaryPayload} from "./evoChangeBeneficiary";
+
+export type {EvoProductKey};
+export {PRODUCT_ID};
 
 const EVO_PAYMENT_MODE = process.env.EVO_PAYMENT_MODE ?? "MOBILE MONEY";
-
-export type EvoProductKey = "BLEBLE" | "IFOH";
-
-const PRODUCT_ID: Record<EvoProductKey, number> = {
-	BLEBLE: 47,
-	IFOH: 50
-};
 
 export type EvoMomoPaymentPayload = {
 	msisdn: string;
@@ -40,63 +38,6 @@ const formatDatePaiement = (d = new Date()) => {
 
 const toIntlMsisdn = (msisdn: string) => `+225${formatPhoneNumber(msisdn)}`;
 
-const asRecord = (v: unknown): Record<string, unknown> | null =>
-	v && typeof v === "object" ? (v as Record<string, unknown>) : null;
-
-const parseContractsList = (body: unknown): Record<string, unknown>[] => {
-	const root = asRecord(body);
-	if (!root) {
-		return [];
-	}
-	const data = root.data;
-	if (Array.isArray(data)) {
-		return data.map(asRecord).filter(Boolean) as Record<string, unknown>[];
-	}
-	const nested = asRecord(data);
-	if (nested && Array.isArray(nested.data)) {
-		return (nested.data as unknown[]).map(asRecord).filter(Boolean) as Record<string, unknown>[];
-	}
-	return [];
-};
-
-const produitIdFromContract = (c: Record<string, unknown>): number | undefined => {
-	const p = asRecord(c.produit);
-	const id = p?.id;
-	return typeof id === "number" ? id : undefined;
-};
-
-const pickContract = (contracts: Record<string, unknown>[], productId: number): Record<string, unknown> | null => {
-	const candidates = contracts.filter(c => {
-		if (c.statut !== "EN_COURS") {
-			return false;
-		}
-		const pid = produitIdFromContract(c);
-		if (pid === productId) {
-			return true;
-		}
-		const nom = String(asRecord(c.produit)?.nom ?? "").toLowerCase();
-		if (productId === 47 && nom.includes("blé")) {
-			return true;
-		}
-		if (productId === 50 && nom.includes("ifo")) {
-			return true;
-		}
-		return false;
-	});
-
-	if (candidates.length === 0) {
-		return null;
-	}
-
-	const byDate = (a: Record<string, unknown>, b: Record<string, unknown>) => {
-		const da = new Date(String(a.createdAt ?? 0)).getTime();
-		const db = new Date(String(b.createdAt ?? 0)).getTime();
-		return db - da;
-	};
-	candidates.sort(byDate);
-	return candidates[0] ?? null;
-};
-
 const parseAmount = (amount: string): number => {
 	const [whole] = amount.split(".", 2);
 	const n = parseInt(whole || "0", 10);
@@ -106,7 +47,7 @@ const parseAmount = (amount: string): number => {
 const parseEcheancesArray = (body: unknown): EcheanceCandidate[] => {
 	const root = asRecord(body);
 	const raw = root?.data ?? body;
-	const arr = Array.isArray(raw) ? raw : Array.isArray(asRecord(raw)?.data) ? asRecord(raw)!.data as unknown[] : [];
+	const arr = Array.isArray(raw) ? raw : Array.isArray(asRecord(raw)?.data) ? (asRecord(raw)!.data as unknown[]) : [];
 	const out: EcheanceCandidate[] = [];
 	for (const row of arr) {
 		const o = asRecord(row);
@@ -175,34 +116,10 @@ export const syncEvoMomoPayment = async (payload: EvoMomoPaymentPayload): Promis
 		return;
 	}
 
-	const productId = PRODUCT_ID[payload.product];
-	const token = await evoLogin();
-	const telephone = formatPhoneNumber(payload.msisdn);
-
-	const parTel = await axios.get(`${EVO_BASE_URL}/api/contrat/par-telephone`, {
-		params: {telephone},
-		headers: {Authorization: `Bearer ${token}`},
-		timeout: EVO_TIMEOUT_MS
-	});
-
-	const contracts = parseContractsList(parTel.data);
-	const chosen = pickContract(contracts, productId);
-	if (!chosen?.numero) {
-		throw new Error("EVO: aucun contrat EN_COURS pour ce produit");
-	}
-	const numeroContrat = String(chosen.numero);
-
-	const byNum = await axios.get(`${EVO_BASE_URL}/api/contrats/by-numero`, {
-		params: {numero: numeroContrat},
-		headers: {Authorization: `Bearer ${token}`},
-		timeout: EVO_TIMEOUT_MS
-	});
-
-	const contractData = asRecord(byNum.data?.data) ?? asRecord(byNum.data);
-	const contractId = contractData?.id;
-	if (typeof contractId !== "number") {
-		throw new Error("EVO: contractId introuvable (by-numero)");
-	}
+	const {contractId, numeroContrat, contractData, token} = await resolveEvoContractForProduct(
+		payload.msisdn,
+		payload.product
+	);
 
 	let imp = await axios
 		.get(`${EVO_BASE_URL}/api/contrat/echeances-impayes`, {
@@ -256,33 +173,7 @@ export const syncEvoRachat = async (payload: EvoRachatPayload): Promise<void> =>
 		return;
 	}
 
-	const productId = PRODUCT_ID[payload.product];
-	const token = await evoLogin();
-	const telephone = formatPhoneNumber(payload.msisdn);
-
-	const parTel = await axios.get(`${EVO_BASE_URL}/api/contrat/par-telephone`, {
-		params: {telephone},
-		headers: {Authorization: `Bearer ${token}`},
-		timeout: EVO_TIMEOUT_MS
-	});
-
-	const contracts = parseContractsList(parTel.data);
-	const chosen = pickContract(contracts, productId);
-	if (!chosen?.numero) {
-		throw new Error("EVO rachat: aucun contrat EN_COURS pour ce produit");
-	}
-
-	const byNum = await axios.get(`${EVO_BASE_URL}/api/contrats/by-numero`, {
-		params: {numero: String(chosen.numero)},
-		headers: {Authorization: `Bearer ${token}`},
-		timeout: EVO_TIMEOUT_MS
-	});
-
-	const contractData = asRecord(byNum.data?.data) ?? asRecord(byNum.data);
-	const contractId = contractData?.id;
-	if (typeof contractId !== "number") {
-		throw new Error("EVO rachat: contractId introuvable");
-	}
+	const {contractId, token} = await resolveEvoContractForProduct(payload.msisdn, payload.product);
 
 	await axios.post(
 		`${EVO_BASE_URL}/api/rachats`,
@@ -304,7 +195,7 @@ export const syncEvoRachat = async (payload: EvoRachatPayload): Promise<void> =>
 	logger.info("[EVO_RACHAT_SYNC_OK]", {
 		localReference: payload.localReference,
 		contractId,
-		productId
+		productId: PRODUCT_ID[payload.product]
 	});
 };
 
@@ -339,7 +230,7 @@ export const queueEvoRachat = async (payload: EvoRachatPayload): Promise<void> =
 };
 
 export const replayEvoOperationPayload = async (
-	operationType: "PAYMENT" | "RACHAT",
+	operationType: "PAYMENT" | "RACHAT" | "CHANGE_BENEF",
 	payload: Record<string, unknown>
 ): Promise<void> => {
 	if (operationType === "PAYMENT") {
@@ -347,6 +238,11 @@ export const replayEvoOperationPayload = async (
 		await syncEvoMomoPayment(p);
 		return;
 	}
-	const p = payload as unknown as EvoRachatPayload;
-	await syncEvoRachat(p);
+	if (operationType === "RACHAT") {
+		const p = payload as unknown as EvoRachatPayload;
+		await syncEvoRachat(p);
+		return;
+	}
+	const p = payload as unknown as EvoChangeBeneficiaryPayload;
+	await syncEvoChangeBeneficiary(p);
 };

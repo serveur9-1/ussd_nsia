@@ -1,4 +1,4 @@
-export type ExternalEvoOperationType = "PAYMENT" | "RACHAT";
+export type ExternalEvoOperationType = "PAYMENT" | "RACHAT" | "CHANGE_BENEF";
 export type ExternalEvoSyncStatus = "PENDING" | "PROCESSING" | "SUCCESS" | "FAILED";
 
 export interface ExternalEvoOperationSync {
