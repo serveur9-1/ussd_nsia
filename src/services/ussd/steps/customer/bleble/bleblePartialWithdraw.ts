@@ -5,6 +5,7 @@ import NepRetraitsRepository from "../../../../../repositories/nepRetraitsReposi
 import {formatDate, formatPhoneNumber, generateReference} from "../../../../../utils/format";
 import NepSouscriptionsRepository from "../../../../../repositories/nepSouscriptionRepository";
 import {StepFunction} from "../../../../../types/appTypes";
+import {queueEvoRachat} from "../../../../../services/integrations/evoPaymentRachat";
 
 const partialWithdraw = ussdMenuCustomer.bleble.children.partialWithdraw
 
@@ -103,6 +104,15 @@ const bleblePartialWithdraw = {
 		});
 		
 		if (result.status) {
+			setImmediate(() => {
+				void queueEvoRachat({
+					msisdn: formatPhoneNumber(req.msisdn),
+					montant: amountValidated.data,
+					typeRachat: "PARTIEL",
+					localReference: reference,
+					product: "BLEBLE"
+				});
+			});
 			return {
 				response: partialWithdraw.children.amount.message.success(amountValidated.data),
 				nextStep: null,

@@ -15,6 +15,7 @@ import {TimeUnit} from "../../types/appTypes";
 import {handleAutoDebitSchedule} from "../customer/instantPaymentNotificationService.controller";
 import {customerPlansBleble, merchantPlansBleble, merchantPlansIfoh} from "../../constants/plans";
 import {Plans} from "../../types/plan";
+import {scheduleEvoMomoPaymentAfterIpn} from "../../services/integrations/scheduleEvoMomoPayment";
 
 type PaymentData = {
 	reference: string;
@@ -216,6 +217,15 @@ export const webhook = async (req: Request, res: Response) => {
 			} else if (categorie === "NAF") {
 				logger.info("[NAF_FLOW]", {reference: data.reference, action});
 				await handleNaf(data.reference, action, timeUnit!, data.responseCode, merchant);
+			}
+
+			if ((categorie === "NEP" || categorie === "NAF") && action.startsWith("PAY")) {
+				scheduleEvoMomoPaymentAfterIpn({
+					msisdn: data.msisdn,
+					amount: data.amount,
+					reference: data.reference,
+					categorie: categorie as "NEP" | "NAF"
+				});
 			}
 			
 			logger.info("[IPN_COMPLETED]", {reference: data.reference});

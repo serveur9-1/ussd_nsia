@@ -13,6 +13,7 @@ import {customerPlansBleble, customerPlansIfoh, maxNumberRetry} from "../../cons
 import NepPaiementRepository from "../../repositories/nepPaiementRepository";
 import {TypeProductCommission} from "../../types/models/commission";
 import {AutoDebitStatus} from "../../types/models/autoDebitSchedule";
+import {scheduleEvoMomoPaymentAfterIpn} from "../../services/integrations/scheduleEvoMomoPayment";
 
 function extractParams(req: Request) {
 	return {
@@ -185,7 +186,7 @@ async function handleNAF(reference: string, responseCode: string, detailAction: 
 			
 			const action = reference.split("_")[3];
 			if (action) {
-				await handleAutoDebitSchedule(paiement, action, 'IFOH', 0, customerPlansBleble);
+				await handleAutoDebitSchedule(paiement, action, 'IFOH', 0, customerPlansIfoh as Plans);
 				logger.info("[NAF_NEXT_PAYMENT_UPDATE]", {
 					reference,
 					souscription: paiement.ID_SOUSCRIPTION,
@@ -267,6 +268,14 @@ export default async function instantPaymentNotificationServiceController(req: R
 			
 			if (categorie === "NEP") await handleNEP(reference, responseCode, detailAction, timeUnit);
 			if (categorie === "NAF") await handleNAF(reference, responseCode, detailAction, timeUnit);
+			if ((categorie === "NEP" || categorie === "NAF") && detailAction[0] === "PAY") {
+				scheduleEvoMomoPaymentAfterIpn({
+					msisdn,
+					amount,
+					reference,
+					categorie: categorie as "NEP" | "NAF"
+				});
+			}
 			if (categorie === "AUTRES") await handleAUTRES(autresRef, action, periode);
 		} else {
 			logger.error("[TRANSACTION_FAILED]", {reference, responseCode, responseMessage});

@@ -1,0 +1,572 @@
+{
+  "info": {
+    "_postman_id": "9369e5e4-8246-4587-a28d-9ce4283fbd17",
+    "name": "API NSIA MTN BLEBLE & IFO Copy",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "_exporter_id": "14206753",
+    "_collection_link": "https://go.postman.co/collection/14206753-9369e5e4-8246-4587-a28d-9ce4283fbd17?source=collection_link"
+  },
+  "item": [
+    {
+      "name": "Authentification",
+      "request": {
+        "method": "POST",
+        "header": [],
+        "body": {
+          "mode": "raw",
+          "raw": "{\r\n    \"username\": \"moov.dev@mail.com\",\r\n    \"password\": \"M79NpXiQ8Z9Ynh3\"\r\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "https://evo-test.nsiavieassurances.com/api/login",
+          "protocol": "https",
+          "host": [
+            "evo-test",
+            "nsiavieassurances",
+            "com"
+          ],
+          "path": [
+            "api",
+            "login"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "Simulation",
+      "request": {
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "{{token}}",
+              "type": "string"
+            }
+          ]
+        },
+        "method": "POST",
+        "header": [],
+        "body": {
+          "mode": "raw",
+          "raw": "{\r\n    \"primePeriodique\": 1000,    /*montant de la prime périodique*/\r\n    \"dureeContrat\": 1,         /*duree du contrat*/\r\n    \"dureeCotisation\": 1,      /*duree de cotisation*/\r\n    \"dureeService\": 0,      \r\n    \"age\": 30,                  /*age assure*/\r\n    \"periodicitePaiementPrime\": 12, /*periodicite 12=mensuelle, 4=trimestrielle, 1=annuelle*/\r\n    \"produit\": 47,              /*MTN BLEBLE =47, MTN IFO =50*/\r\n    \"dateEffet\": \"01/02/2026\"   /*date effet du contrat*/\r\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "https://evo-test.nsiavieassurances.com/api/v2/simulate-vie",
+          "protocol": "https",
+          "host": [
+            "evo-test",
+            "nsiavieassurances",
+            "com"
+          ],
+          "path": [
+            "api",
+            "v2",
+            "simulate-vie"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "Souscription",
+      "request": {
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "{{token}}",
+              "type": "string"
+            }
+          ]
+        },
+        "method": "POST",
+        "header": [],
+        "body": {
+          "mode": "raw",
+          "raw": "{\r\n    \"souscripteur\": {\r\n        \"nom\": \"TAPE\",\r\n        \"prenom\": \"KONAN\",\r\n        \"dateDeNaissance\": \"1988-01-11\",\r\n        \"telephone1\": \"0165239856\"\r\n    },\r\n    \"assures\": [\r\n        {\r\n            \"telephone1\": \"0165239856\",\r\n            \"prenom\": \"Morel\",\r\n            \"nom\": \"Lucas\",\r\n            \"lienParente\": \"Souscripteur\",\r\n            \"dateDeNaissance\": \"1988-01-11\"\r\n        }\r\n    ],\r\n    \"beneficiaires\": [\r\n        {\r\n            \"nom\": \"Kouadou Lucas Morel\",\r\n            \"typeBeneficiaire\": 1, /*1=pour préciser beneficiaire en cas de vie*/\r\n            \"partBeneficiaire\" : 100\r\n        }\r\n    ],\r\n    \"produit\": 47, /*48 MOOV EPARGNE PLUS (option 7500 & 12500); 49 MOOV SOUTIEN FUNERAILLE (option 1000)*/\r\n    // \"produit\": 77, /*48 MOOV EPARGNE PLUS (option 7500 & 12500); 49 MOOV SOUTIEN FUNERAILLE (option 1000)*/\r\n    \"duree\": 1,\r\n    \"periodicite\": \"MENSUEL\",\r\n    \"dateEffet\": \"2026-03-01\",\r\n    \"dateEcheance\": \"2027-03-28\",\r\n    \"simulationId\":14137,\r\n    \"primePeriodique\":1000\r\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "{{baseurl}}/api/v2/save-simple-contrat",
+          "host": [
+            "{{baseurl}}"
+          ],
+          "path": [
+            "api",
+            "v2",
+            "save-simple-contrat"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "Get contrat by numero telephone souscripteur",
+      "request": {
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "{{token}}",
+              "type": "string"
+            }
+          ]
+        },
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseurl}}/api/contrat/par-telephone?telephone=0165239856",
+          "host": [
+            "{{baseurl}}"
+          ],
+          "path": [
+            "api",
+            "contrat",
+            "par-telephone"
+          ],
+          "query": [
+            {
+              "key": "telephone",
+              "value": "0165239856"
+            }
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "Get contrat By Police Number",
+      "request": {
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "{{token}}",
+              "type": "string"
+            }
+          ]
+        },
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "https://evo-test.nsiavieassurances.com/api/contrats/by-numero?numero=1030000087",
+          "protocol": "https",
+          "host": [
+            "evo-test",
+            "nsiavieassurances",
+            "com"
+          ],
+          "path": [
+            "api",
+            "contrats",
+            "by-numero"
+          ],
+          "query": [
+            {
+              "key": "numero",
+              "value": "1030000087"
+            }
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "Get Echeance Impaye By Contrat",
+      "request": {
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "{{token}}",
+              "type": "string"
+            }
+          ]
+        },
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseurl}}/api/contrat/echeances-impayes?numeroContrat=1040000194",
+          "host": [
+            "{{baseurl}}"
+          ],
+          "path": [
+            "api",
+            "contrat",
+            "echeances-impayes"
+          ],
+          "query": [
+            {
+              "key": "numeroContrat",
+              "value": "1040000194"
+            }
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "Get Echeance Payee par Contrat",
+      "request": {
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "{{token}}",
+              "type": "string"
+            }
+          ]
+        },
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseurl}}/api/contrat/echeances-payes?numeroContrat=141200438000000",
+          "host": [
+            "{{baseurl}}"
+          ],
+          "path": [
+            "api",
+            "contrat",
+            "echeances-payes"
+          ],
+          "query": [
+            {
+              "key": "numeroContrat",
+              "value": "141200438000000"
+            }
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "Get Dernier Rachat",
+      "request": {
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "{{token}}",
+              "type": "string"
+            }
+          ]
+        },
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseurl}}/api/contrat/dernier-rachat?numeroContrat=1030000114",
+          "host": [
+            "{{baseurl}}"
+          ],
+          "path": [
+            "api",
+            "contrat",
+            "dernier-rachat"
+          ],
+          "query": [
+            {
+              "key": null,
+              "value": null,
+              "description": "0010300008",
+              "type": "text",
+              "disabled": true
+            },
+            {
+              "key": "numeroContrat",
+              "value": "1030000114"
+            }
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "Info-rachat",
+      "request": {
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "{{token}}",
+              "type": "string"
+            }
+          ]
+        },
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseurl}}/api/contrat/info-rachat?numeroContrat=0010300008",
+          "host": [
+            "{{baseurl}}"
+          ],
+          "path": [
+            "api",
+            "contrat",
+            "info-rachat"
+          ],
+          "query": [
+            {
+              "key": "numeroContrat",
+              "value": "0010300008"
+            }
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "Get Cotisations",
+      "request": {
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "{{token}}",
+              "type": "string"
+            }
+          ]
+        },
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseurl}}/api/contrats/by-numero?numero=1000000019",
+          "host": [
+            "{{baseurl}}"
+          ],
+          "path": [
+            "api",
+            "contrats",
+            "by-numero"
+          ],
+          "query": [
+            {
+              "key": null,
+              "value": "201200326000000",
+              "type": "text",
+              "disabled": true
+            },
+            {
+              "key": "numero",
+              "value": "1000000019"
+            }
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "Paiement",
+      "request": {
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "{{token}}",
+              "type": "string"
+            }
+          ]
+        },
+        "method": "POST",
+        "header": [],
+        "body": {
+          "mode": "raw",
+          "raw": "{\r\n    \"echeances\": [\r\n         {\r\n            \"id\":1921884,\r\n            \"modePaiement\" : \"ESPECE\",\r\n            \"datePaiement\"  : \"2025-04-02 10:40:05\",\r\n            \"referencePaiement\": \"13565234567898\"\r\n         }  /* ID de l'échéance, à obtenir depuis GET Cotisation*/\r\n    ],\r\n    \"contractId\": 43978  /* ID du contrat */\r\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "{{baseurl}}/api/payment/echeance",
+          "host": [
+            "{{baseurl}}"
+          ],
+          "path": [
+            "api",
+            "payment",
+            "echeance"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "Create Demande de Rachat",
+      "request": {
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "{{token}}",
+              "type": "string"
+            }
+          ]
+        },
+        "method": "POST",
+        "header": [],
+        "body": {
+          "mode": "raw",
+          "raw": "{\r\n    \"banqueOperateur\":\"MTN\", /* PAIEMENT BANCAIRE = NOM DE LA BANQUE - PAIEMENT MOBILE = NOM OPERATEUR MOBILE */\r\n    \"numero\":\"+2250505050505\", /* NUMERO DE COMPTE POUR VIREMENT BANCAIRE , OU NUMERO DE TELEPHONE POUR PAIEMENT VIA MOBILE MONEY */\r\n    \"montant\":\"15000\", /* Montant de la demande */\r\n    \"type\":\"PARTIEL\", /* PARTIEL, TOTAL */\r\n    \"typePaiement\":\"MOBILE\", /* VIREMENT OU MOBILE MONEY */\r\n    \"commentaire\":\"Demande de Rachat Partiel 19012026\",\r\n    \"contrat\":846  /* Identifiant du contrat */\r\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "https://evo-test.nsiavieassurances.com/api/rachats",
+          "protocol": "https",
+          "host": [
+            "evo-test",
+            "nsiavieassurances",
+            "com"
+          ],
+          "path": [
+            "api",
+            "rachats"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "Get Rachat",
+      "protocolProfileBehavior": {
+        "disableBodyPruning": true
+      },
+      "request": {
+        "method": "GET",
+        "header": [],
+        "body": {
+          "mode": "raw",
+          "raw": "",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "https://evo-test.nsiavieassurances.com/api/rachats/80",
+          "protocol": "https",
+          "host": [
+            "evo-test",
+            "nsiavieassurances",
+            "com"
+          ],
+          "path": [
+            "api",
+            "rachats",
+            "80"
+          ]
+        }
+      },
+      "response": []
+    }
+  ],
+  "auth": {
+    "type": "bearer",
+    "bearer": [
+      {
+        "key": "token",
+        "value": "{{access_token}}",
+        "type": "string"
+      }
+    ]
+  },
+  "event": [
+    {
+      "listen": "prerequest",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          "var moment = require('moment');",
+          "pm.collectionVariables.set('currentdate', moment().format((\"YYYY-MM-DD HH:mm:ss\")));"
+        ]
+      }
+    },
+    {
+      "listen": "test",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          ""
+        ]
+      }
+    }
+  ],
+  "variable": [
+    {
+      "key": "auth_url",
+      "value": "http://74.208.120.109:8888/NSIA/api/login",
+      "type": "string"
+    },
+    {
+      "key": "url",
+      "value": "http://74.208.120.109:8888/SenAssuranceVie",
+      "type": "string"
+    },
+    {
+      "key": "base_url",
+      "value": "http://74.208.120.109:8888/SenAssuranceVie/api",
+      "type": "string"
+    },
+    {
+      "key": "currentdate",
+      "value": ""
+    },
+    {
+      "key": "currentResource",
+      "value": ""
+    },
+    {
+      "key": "access_token",
+      "value": ""
+    },
+    {
+      "key": "refresh_token",
+      "value": ""
+    },
+    {
+      "key": "localAdress",
+      "value": "http://localhost:8085/api",
+      "type": "string"
+    },
+    {
+      "key": "remoteAdress",
+      "value": "http://74.208.120.109:8888/SenAssuranceVie/api",
+      "type": "string"
+    },
+    {
+      "key": "public_url",
+      "value": "http://74.208.120.109:8888/SenAssuranceVie/public",
+      "type": "string"
+    }
+  ]
+}

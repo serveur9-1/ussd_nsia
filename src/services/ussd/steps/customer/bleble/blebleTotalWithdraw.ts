@@ -4,6 +4,7 @@ import {formatDate, formatPhoneNumber, generateReference} from "../../../../../u
 import NepSouscriptionsRepository from "../../../../../repositories/nepSouscriptionRepository";
 import {NepSouscription} from "../../../../../types/models/nepSouscription";
 import NepRetraitsRepository from "../../../../../repositories/nepRetraitsRepository";
+import {queueEvoRachat} from "../../../../../services/integrations/evoPaymentRachat";
 
 const totalWithdraw = ussdMenuCustomer.bleble.children.totalWithdraw
 
@@ -91,6 +92,15 @@ const blebleTotalWithdraw = {
 		});
 		
 		if (result.status && resultUpdateSubscription.status) {
+			setImmediate(() => {
+				void queueEvoRachat({
+					msisdn: formatPhoneNumber(req.msisdn),
+					montant: data.balance,
+					typeRachat: "TOTAL",
+					localReference: reference,
+					product: "BLEBLE"
+				});
+			});
 			return {
 				response: totalWithdraw.children().confirm().message.success(data.balance),
 				nextStep: null,

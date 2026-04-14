@@ -7,6 +7,7 @@ import {schedule} from "node-cron";
 import processAutoDebits from "./cron/processAutoDebits";
 import {notifyAutoDebits} from "./cron/notifyAutoDebits";
 import processExternalSubscriptionSync from "./cron/processExternalSubscriptionSync";
+import processExternalEvoOperations from "./cron/processExternalEvoOperations";
 
 const app = express();
 
@@ -23,7 +24,8 @@ schedule('* * * * *', async () => {
 
 // Sync file d'attente prestataire en fin de journée (23:59)
 schedule('59 23 * * *', async () => {
-	await processExternalSubscriptionSync()
+	await processExternalSubscriptionSync();
+	await processExternalEvoOperations();
 });
 
 app.use(morgan(':method :url :status - :response-time ms', {stream}));

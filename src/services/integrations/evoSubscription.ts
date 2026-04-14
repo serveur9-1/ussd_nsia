@@ -1,13 +1,9 @@
 import axios from "axios";
 import {formatDate, splitFullName} from "../../utils/format";
 import {logger} from "../../utils/logger";
+import {EVO_BASE_URL, EVO_TIMEOUT_MS, evoLogin} from "./evoAuth";
 
 type ProductKey = "BLEBLE" | "IFOH";
-
-const EVO_BASE_URL = process.env.EVO_BASE_URL ?? "https://evo-test.nsiavieassurances.com";
-const EVO_USERNAME = process.env.EVO_USERNAME ?? "";
-const EVO_PASSWORD = process.env.EVO_PASSWORD ?? "";
-const EVO_TIMEOUT_MS = Number(process.env.EVO_TIMEOUT_MS ?? 15000);
 
 const PRODUCT_ID: Record<ProductKey, number> = {
 	BLEBLE: 47,
@@ -45,23 +41,6 @@ const computeAge = (birthDateDdMmYyyy: string): number => {
 		age -= 1;
 	}
 	return age;
-};
-
-const login = async (): Promise<string> => {
-	const response = await axios.post(
-		`${EVO_BASE_URL}/api/login`,
-		{
-			username: EVO_USERNAME,
-			password: EVO_PASSWORD
-		},
-		{timeout: EVO_TIMEOUT_MS}
-	);
-
-	const accessToken = response.data?.data?.access_token as string | undefined;
-	if (!accessToken) {
-		throw new Error("Token EVO manquant dans la réponse login");
-	}
-	return accessToken;
 };
 
 export const buildEvoSyncPayload = (payload: {
@@ -128,7 +107,7 @@ export const buildEvoSyncPayload = (payload: {
 };
 
 export const syncEvoSubscription = async (queuePayload: Record<string, unknown>) => {
-	const token = await login();
+	const token = await evoLogin();
 
 	const simulatePayload = queuePayload.simulate as Record<string, unknown>;
 	const savePayload = queuePayload.save as Record<string, unknown>;
