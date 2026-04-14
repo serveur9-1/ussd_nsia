@@ -60,9 +60,10 @@ const bleblePartialWithdraw = {
 			};
 		}
 		
-		const amountValidated = validationAmount(input)
-		
-		if ((!amountValidated.isValid || !amountValidated.data) || Number(input) < 500) {
+		const amountValidated = validationAmount(input);
+		const montantSaisi = amountValidated.data;
+
+		if (!amountValidated.isValid || montantSaisi === undefined || Number(input) < 500) {
 			return {
 				response: partialWithdraw.children.amount.message.invalide,
 				nextStep: 'bleble_partial_withdraw_amount_customer',
@@ -70,7 +71,7 @@ const bleblePartialWithdraw = {
 			};
 		}
 
-		const montantRetrait: number = amountValidated.data;
+		const montantRetrait = montantSaisi;
 		
 		const reference = generateReference("NEP", "RETR", req.msisdn);
 		const now = new Date();
