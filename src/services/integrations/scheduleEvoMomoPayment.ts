@@ -8,6 +8,8 @@ export function scheduleEvoMomoPaymentAfterIpn(params: {
 	amount: string;
 	reference: string;
 	categorie: "NEP" | "NAF";
+	evoContractId?: number | null;
+	numeroPolice?: string | null;
 }): void {
 	const product = params.categorie === "NEP" ? "BLEBLE" : "IFOH";
 	setImmediate(() => {
@@ -15,7 +17,9 @@ export function scheduleEvoMomoPaymentAfterIpn(params: {
 			msisdn: params.msisdn,
 			amount: params.amount,
 			referencePaiement: params.reference,
-			product
+			product,
+			evoContractId: params.evoContractId,
+			numeroPolice: params.numeroPolice
 		});
 	});
 }

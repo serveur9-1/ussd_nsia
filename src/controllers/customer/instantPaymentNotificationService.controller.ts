@@ -269,11 +269,31 @@ export default async function instantPaymentNotificationServiceController(req: R
 			if (categorie === "NEP") await handleNEP(reference, responseCode, detailAction, timeUnit);
 			if (categorie === "NAF") await handleNAF(reference, responseCode, detailAction, timeUnit);
 			if ((categorie === "NEP" || categorie === "NAF") && detailAction[0] === "PAY") {
+				let evoContractId: number | null = null;
+				let numeroPolice: string | null = null;
+				if (categorie === "NEP") {
+					const payment = await NepPaiementRepository.getByReference(reference);
+					if (payment.status && payment.data) {
+						const sub = await NepSouscriptionsRepository.getByIdWithClient(payment.data.ID_SOUSCRIPTION);
+						evoContractId = sub.data?.EVO_CONTRACT_ID ?? null;
+						numeroPolice = sub.data?.NUMERO_POLICE ?? null;
+					}
+				}
+				if (categorie === "NAF") {
+					const payment = await NafPaiementRepository.getByReference(reference);
+					if (payment.status && payment.data) {
+						const sub = await NafSouscriptionRepository.getByIdWithClient(payment.data.ID_SOUSCRIPTION);
+						evoContractId = sub.data?.EVO_CONTRACT_ID ?? null;
+						numeroPolice = sub.data?.NUMERO_POLICE ?? null;
+					}
+				}
 				scheduleEvoMomoPaymentAfterIpn({
 					msisdn,
 					amount,
 					reference,
-					categorie: categorie as "NEP" | "NAF"
+					categorie: categorie as "NEP" | "NAF",
+					evoContractId,
+					numeroPolice
 				});
 			}
 			if (categorie === "AUTRES") await handleAUTRES(autresRef, action, periode);

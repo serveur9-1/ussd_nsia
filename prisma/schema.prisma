@@ -156,6 +156,7 @@ model naf_souscriptions {
   REFERENCE_SOUSCRIPTION String   @db.VarChar(100)
   PROCHAIN_PAIEMENT      DateTime @db.Date
   NUMERO_POLICE          String?  @db.VarChar(50)
+  EVO_CONTRACT_ID        Int?
   MSISDN                 String?  @db.VarChar(100)
 }
 
@@ -214,6 +215,7 @@ model nep_souscriptions {
   REFERENCE_SOUSCRIPTION String   @db.VarChar(100)
   PROCHAIN_PAIEMENT      DateTime @db.Date
   NUMERO_POLICE          String?  @db.VarChar(50)
+  EVO_CONTRACT_ID        Int?
   MSISDN                 String?  @db.VarChar(100)
 }
 

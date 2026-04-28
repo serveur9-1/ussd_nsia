@@ -20,6 +20,7 @@ interface NafClientInformation {
 	REFERENCE_SOUSCRIPTION: string;
 	PROCHAIN_PAIEMENT: Date;
 	NUMERO_POLICE: string;
+	EVO_CONTRACT_ID?: number | null;
 	ETAT_SOUSCRIPTION: PaymentResponseCode;
 }
 

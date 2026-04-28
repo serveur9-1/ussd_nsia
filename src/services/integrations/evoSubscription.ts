@@ -126,7 +126,7 @@ export const syncEvoSubscription = async (queuePayload: Record<string, unknown>)
 		throw new Error("Simulation EVO sans id");
 	}
 
-	await axios.post(
+	const saveResponse = await axios.post(
 		`${EVO_BASE_URL}/api/v2/save-simple-contrat`,
 		{
 			...savePayload,
@@ -138,5 +138,14 @@ export const syncEvoSubscription = async (queuePayload: Record<string, unknown>)
 		}
 	);
 
-	logger.info("[EVO_SYNC_SUCCESS]", {simulationId});
+	const contractData = saveResponse.data?.data as Record<string, unknown> | undefined;
+	const evoContractId = typeof contractData?.id === "number" ? contractData.id : null;
+	const numeroPolice = typeof contractData?.numero === "string" ? contractData.numero : null;
+
+	logger.info("[EVO_SYNC_SUCCESS]", {simulationId, evoContractId, numeroPolice});
+	return {
+		simulationId,
+		evoContractId,
+		numeroPolice
+	};
 };

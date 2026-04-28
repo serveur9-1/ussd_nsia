@@ -113,7 +113,9 @@ const bleblePartialWithdraw = {
 					montant: montantRetrait,
 					typeRachat: "PARTIEL",
 					localReference: reference,
-					product: "BLEBLE"
+					product: "BLEBLE",
+					evoContractId: subscription.EVO_CONTRACT_ID ?? null,
+					numeroPolice: subscription.NUMERO_POLICE ?? null
 				});
 			});
 			return {

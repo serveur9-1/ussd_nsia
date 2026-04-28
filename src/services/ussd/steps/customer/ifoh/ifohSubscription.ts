@@ -265,7 +265,14 @@ const ifohSubscriptionMenu = {
 							periodicite: "MENSUEL",
 						});
 						try {
-							await syncEvoSubscription(evoPayload);
+							const evoResult = await syncEvoSubscription(evoPayload);
+							await NafSouscriptionRepository.updateEvoContractData(
+								Number(resultSubscription.data?.ID_SOUSCRIPTION),
+								{
+									evoContractId: evoResult.evoContractId,
+									numeroPolice: evoResult.numeroPolice
+								}
+							);
 						} catch (error) {
 							logger.error("[EVO_SYNC_IMMEDIATE_ERROR][IFOH]", {error, reference});
 							await ExternalSubscriptionSyncRepository.insert({
@@ -273,7 +280,11 @@ const ifohSubscriptionMenu = {
 								localReference: reference,
 								localSubscriptionId: Number(resultSubscription.data?.ID_SOUSCRIPTION),
 								msisdn,
-								payload: evoPayload
+								payload: {
+									...evoPayload,
+									localSubscriptionId: Number(resultSubscription.data?.ID_SOUSCRIPTION),
+									product: "IFOH"
+								}
 							});
 						}
 

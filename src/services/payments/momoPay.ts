@@ -1,4 +1,4 @@
-import axios from 'axios';
+import axios, {isAxiosError} from 'axios';
 import {formatDate, formatPhoneNumber, generateReference, getCurrentDate} from "../../utils/format";
 import {PaymentResult, PayParams} from "../../types/paymentTypes";
 import {logger} from "../../utils/logger";
@@ -15,6 +15,19 @@ import NafPaiementRepository from "../../repositories/nafPaiementRepository";
 const BILLING_URL = process.env.BILLING_URL!;
 const serviceCode = process.env.SERVICE_CODE!;
 const password = process.env.PASSWORD!;
+const billingTimeoutParsed = Number(process.env.BILLING_TIMEOUT_MS);
+const BILLING_TIMEOUT_MS =
+	Number.isFinite(billingTimeoutParsed) && billingTimeoutParsed > 0 ? billingTimeoutParsed : 25_000;
+
+function billingResponseToString(data: unknown): string {
+	if (typeof data === 'string') return data;
+	if (data == null) return '';
+	try {
+		return JSON.stringify(data);
+	} catch {
+		return String(data);
+	}
+}
 
 export default async function momoPay({msisdn, reference, amount}: PayParams): Promise<PaymentResult> {
 	const MetaData = "USSD PAYMENT";
@@ -35,9 +48,10 @@ export default async function momoPay({msisdn, reference, amount}: PayParams): P
 		
 		const response = await axios.post(BILLING_URL, params, {
 			headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+			timeout: BILLING_TIMEOUT_MS,
 		});
 		
-		const xml = response.data as string;
+		const xml = billingResponseToString(response.data);
 		
 		logger.info("Response payment", {response: xml})
 		
@@ -85,11 +99,23 @@ export default async function momoPay({msisdn, reference, amount}: PayParams): P
 			message: "Une erreur est survenue. Le service est momentanément indisponible. Veuillez réessayer plus tard."
 		};
 	} catch (error) {
-		logger.error("Error payment with MSISDN %s", msisdn, {error});
+		const timedOut = isAxiosError(error) && error.code === 'ECONNABORTED';
+		if (isAxiosError(error)) {
+			logger.error("Error payment with MSISDN %s", msisdn, {
+				axiosCode: error.code,
+				status: error.response?.status,
+				message: error.message,
+				isTimeout: timedOut,
+			});
+		} else {
+			logger.error("Error payment with MSISDN %s", msisdn, {error});
+		}
 		return {
 			success: false,
-			code: "ERR",
-			message: "Le système est momentanément indisponible veuillez essayer plus tard."
+			code: timedOut ? 'TIMEOUT' : 'ERR',
+			message: timedOut
+				? 'Le service de paiement met trop longtemps à répondre. Veuillez réessayer dans un instant.'
+				: 'Le système est momentanément indisponible veuillez essayer plus tard.'
 		};
 	}
 }

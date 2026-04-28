@@ -119,6 +119,30 @@ export default class NepSouscriptionsRepository {
 			};
 		}
 	}
+
+	static async updateEvoContractData(
+		idSouscription: number,
+		data: {numeroPolice?: string | null; evoContractId?: number | null}
+	): Promise<ResponseService<boolean>> {
+		try {
+			const payload: {NUMERO_POLICE?: string | null; EVO_CONTRACT_ID?: number | null} = {};
+			if (data.numeroPolice !== undefined) payload.NUMERO_POLICE = data.numeroPolice;
+			if (data.evoContractId !== undefined) payload.EVO_CONTRACT_ID = data.evoContractId;
+			if (Object.keys(payload).length === 0) {
+				return {data: false, status: false};
+			}
+
+			const result = await prisma.nep_souscriptions.updateMany({
+				where: {ID_SOUSCRIPTION: idSouscription},
+				data: payload
+			});
+
+			return {data: result.count > 0, status: true};
+		} catch (error) {
+			logger.error("Erreur lors de la mise à jour des infos EVO NEP :", error);
+			return {data: false, status: false};
+		}
+	}
 	
 	static async getByIdWithClient(idSouscription: number): Promise<ResponseService<NepSouscription & {
 		FIRST_NAME: string,

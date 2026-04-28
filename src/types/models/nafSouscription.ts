@@ -10,7 +10,8 @@ export interface NafSouscription {
 	REFERENCE_SOUSCRIPTION: string;
 	PROCHAIN_PAIEMENT: Date;
 	NUMERO_POLICE: string | null;
+	EVO_CONTRACT_ID?: number | null;
 	MSISDN?: string,
 }
 
-export type NafSouscriptionFormData = Omit<NafSouscription, 'ID_SOUSCRIPTION' | 'NUMERO_POLICE' | 'DATE_SOUSCRIPTION'>
+export type NafSouscriptionFormData = Omit<NafSouscription, 'ID_SOUSCRIPTION' | 'NUMERO_POLICE' | 'EVO_CONTRACT_ID' | 'DATE_SOUSCRIPTION'>

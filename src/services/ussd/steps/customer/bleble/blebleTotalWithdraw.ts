@@ -98,7 +98,9 @@ const blebleTotalWithdraw = {
 					montant: data.balance,
 					typeRachat: "TOTAL",
 					localReference: reference,
-					product: "BLEBLE"
+					product: "BLEBLE",
+					evoContractId: subscription.EVO_CONTRACT_ID ?? null,
+					numeroPolice: subscription.NUMERO_POLICE ?? null
 				});
 			});
 			return {

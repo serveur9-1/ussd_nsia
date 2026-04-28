@@ -220,11 +220,31 @@ export const webhook = async (req: Request, res: Response) => {
 			}
 
 			if ((categorie === "NEP" || categorie === "NAF") && action.startsWith("PAY")) {
+				let evoContractId: number | null = null;
+				let numeroPolice: string | null = null;
+				if (categorie === "NEP") {
+					const payment = await NepPaiementRepository.getByReference(data.reference);
+					if (payment.status && payment.data) {
+						const sub = await NepSouscriptionsRepository.getByIdWithClient(payment.data.ID_SOUSCRIPTION);
+						evoContractId = sub.data?.EVO_CONTRACT_ID ?? null;
+						numeroPolice = sub.data?.NUMERO_POLICE ?? null;
+					}
+				}
+				if (categorie === "NAF") {
+					const payment = await NafPaiementRepository.getByReference(data.reference);
+					if (payment.status && payment.data) {
+						const sub = await NafSouscriptionRepository.getByIdWithClient(payment.data.ID_SOUSCRIPTION);
+						evoContractId = sub.data?.EVO_CONTRACT_ID ?? null;
+						numeroPolice = sub.data?.NUMERO_POLICE ?? null;
+					}
+				}
 				scheduleEvoMomoPaymentAfterIpn({
 					msisdn: data.msisdn,
 					amount: data.amount,
 					reference: data.reference,
-					categorie: categorie as "NEP" | "NAF"
+					categorie: categorie as "NEP" | "NAF",
+					evoContractId,
+					numeroPolice
 				});
 			}
 			

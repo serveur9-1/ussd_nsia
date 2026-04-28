@@ -1,4 +1,6 @@
 import ExternalSubscriptionSyncRepository from "../repositories/externalSubscriptionSyncRepository";
+import NafSouscriptionRepository from "../repositories/nafSouscriptionRepository";
+import NepSouscriptionsRepository from "../repositories/nepSouscriptionRepository";
 import {syncEvoSubscription} from "../services/integrations/evoSubscription";
 import {logger} from "../utils/logger";
 
@@ -21,7 +23,22 @@ export default async function processExternalSubscriptionSync() {
 		try {
 			await ExternalSubscriptionSyncRepository.markProcessing(Number(row.id));
 			const parsedPayload = JSON.parse(row.payload) as Record<string, unknown>;
-			await syncEvoSubscription(parsedPayload);
+			const evoResult = await syncEvoSubscription(parsedPayload);
+			const localSubscriptionId = Number(parsedPayload.localSubscriptionId ?? row.local_subscription_id);
+			if (Number.isFinite(localSubscriptionId)) {
+				if (row.product === "BLEBLE") {
+					await NepSouscriptionsRepository.updateEvoContractData(localSubscriptionId, {
+						evoContractId: evoResult.evoContractId,
+						numeroPolice: evoResult.numeroPolice
+					});
+				}
+				if (row.product === "IFOH") {
+					await NafSouscriptionRepository.updateEvoContractData(localSubscriptionId, {
+						evoContractId: evoResult.evoContractId,
+						numeroPolice: evoResult.numeroPolice
+					});
+				}
+			}
 			await ExternalSubscriptionSyncRepository.markSuccess(Number(row.id));
 		} catch (error) {
 			const nextRetryCount = row.retry_count + 1;

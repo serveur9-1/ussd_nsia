@@ -23,6 +23,7 @@ export default class NafClientRepository {
                 s.REFERENCE_SOUSCRIPTION,
                 s.PROCHAIN_PAIEMENT,
                 s.NUMERO_POLICE,
+                s.EVO_CONTRACT_ID,
                 s.ETAT_SOUSCRIPTION
             FROM naf_clients c
             INNER JOIN naf_souscriptions s

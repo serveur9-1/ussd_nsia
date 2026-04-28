@@ -16,6 +16,8 @@ export type EvoMomoPaymentPayload = {
 	referencePaiement: string;
 	amount: string;
 	product: EvoProductKey;
+	evoContractId?: number | null;
+	numeroPolice?: string | null;
 };
 
 export type EvoRachatPayload = {
@@ -24,6 +26,8 @@ export type EvoRachatPayload = {
 	typeRachat: "PARTIEL" | "TOTAL";
 	localReference: string;
 	product: EvoProductKey;
+	evoContractId?: number | null;
+	numeroPolice?: string | null;
 };
 
 type EcheanceCandidate = {
@@ -110,32 +114,89 @@ const pickEcheanceForAmount = (candidates: EcheanceCandidate[], paid: number): E
 	return best;
 };
 
+const pickFirstEcheanceFromContract = (contractData?: Record<string, unknown>): EcheanceCandidate | null => {
+	if (!contractData) {
+		return null;
+	}
+	const cotisations = Array.isArray(contractData.cotisations) ? contractData.cotisations : [];
+	const firstCotisation = asRecord(cotisations[0]);
+	const echeances = Array.isArray(firstCotisation?.echeances) ? firstCotisation.echeances : [];
+	const firstEcheance = asRecord(echeances[0]);
+	if (!firstEcheance || typeof firstEcheance.id !== "number") {
+		return null;
+	}
+	const montant = Number(firstEcheance.montant ?? 0);
+	return {
+		id: firstEcheance.id,
+		montant: Number.isFinite(montant) ? montant : 0
+	};
+};
+
+const resolveContractFromPayload = async (payload: {
+	msisdn: string;
+	product: EvoProductKey;
+	evoContractId?: number | null;
+	numeroPolice?: string | null;
+}) => {
+	if (payload.evoContractId || payload.numeroPolice) {
+		const token = await evoLogin();
+		let contractId = payload.evoContractId ?? null;
+		let numeroContrat = payload.numeroPolice ?? null;
+		let contractData: Record<string, unknown> | undefined;
+
+		if (numeroContrat) {
+			const byNum = await axios.get(`${EVO_BASE_URL}/api/contrats/by-numero`, {
+				params: {numero: numeroContrat},
+				headers: {Authorization: `Bearer ${token}`},
+				timeout: EVO_TIMEOUT_MS
+			});
+			contractData = asRecord(byNum.data)?.data as Record<string, unknown> | undefined;
+			if (!contractId && typeof contractData?.id === "number") {
+				contractId = contractData.id;
+			}
+		}
+
+		if (!contractId) {
+			throw new Error("EVO: contractId manquant pour paiement/rachat");
+		}
+
+		return {
+			contractId,
+			numeroContrat: numeroContrat ?? "",
+			contractData,
+			token
+		};
+	}
+
+	return resolveEvoContractForProduct(payload.msisdn, payload.product);
+};
+
 export const syncEvoMomoPayment = async (payload: EvoMomoPaymentPayload): Promise<void> => {
 	if (!evoAuthConfigured()) {
 		logEvoSkip("credentials_manquantes", {reference: payload.referencePaiement});
 		return;
 	}
 
-	const {contractId, numeroContrat, contractData, token} = await resolveEvoContractForProduct(
-		payload.msisdn,
-		payload.product
-	);
+	const {contractId, numeroContrat, contractData, token} = await resolveContractFromPayload(payload);
 
-	let imp = await axios
-		.get(`${EVO_BASE_URL}/api/contrat/echeances-impayes`, {
-			params: {numeroContrat},
-			headers: {Authorization: `Bearer ${token}`},
-			timeout: EVO_TIMEOUT_MS
-		})
-		.then(r => parseEcheancesArray(r.data))
-		.catch(() => [] as EcheanceCandidate[]);
-
-	if (imp.length === 0 && contractData) {
-		imp = collectUnpaidFromCotisations(contractData);
+	// Nouveau flow: prendre la 1ere echeance non payee du contrat retourne par /api/contrats/by-numero.
+	let echeance = pickFirstEcheanceFromContract(contractData);
+	if (!echeance) {
+		let imp = await axios
+			.get(`${EVO_BASE_URL}/api/contrat/echeances-impayes`, {
+				params: {numeroContrat},
+				headers: {Authorization: `Bearer ${token}`},
+				timeout: EVO_TIMEOUT_MS
+			})
+			.then(r => parseEcheancesArray(r.data))
+			.catch(() => [] as EcheanceCandidate[]);
+		if (imp.length === 0 && contractData) {
+			imp = collectUnpaidFromCotisations(contractData);
+		}
+		const paid = parseAmount(payload.amount);
+		echeance = pickEcheanceForAmount(imp, paid);
 	}
 
-	const paid = parseAmount(payload.amount);
-	const echeance = pickEcheanceForAmount(imp, paid);
 	if (!echeance) {
 		throw new Error("EVO: aucune échéance impayée à rapprocher");
 	}
@@ -173,7 +234,7 @@ export const syncEvoRachat = async (payload: EvoRachatPayload): Promise<void> =>
 		return;
 	}
 
-	const {contractId, token} = await resolveEvoContractForProduct(payload.msisdn, payload.product);
+	const {contractId, token} = await resolveContractFromPayload(payload);
 
 	await axios.post(
 		`${EVO_BASE_URL}/api/rachats`,

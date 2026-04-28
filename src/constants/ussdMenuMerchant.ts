@@ -139,7 +139,7 @@ const ussdMenuMerchant = {
 							return `Votre demande de paiement de ${plan.amount.toLocaleString()}F, frais: ${plan.fee.value.toLocaleString()} F, Total: ${(plan.amount + plan.fee.value).toLocaleString()} F est en cours de traitement, Vous recevrez un message pour effectuer le paiement des frais`;
 						},
 						messages: {
-							unsubscribe: (product: Product) => `Le client ne dispose pas de contrat ${product}. Veuillez procéder à une souscription".\n${thank}`,
+							unsubscribe: (product: Product) => `Le client ne dispose pas de contrat ${product}. Veuillez procéder à une souscription.\n${thank}`,
 							alreadySubscribe: "Le client a déjà souscrit à cette Assurance. Toutefois il peut résilier son contrat."
 						},
 						children: {

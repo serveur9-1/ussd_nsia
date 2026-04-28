@@ -36,6 +36,7 @@ export default class NepClientRepository {
                 s.REFERENCE_SOUSCRIPTION,
                 s.PROCHAIN_PAIEMENT,
                 s.NUMERO_POLICE,
+                s.EVO_CONTRACT_ID,
                 s.ETAT_SOUSCRIPTION
             FROM nep_clients c
             JOIN nep_souscriptions s ON c.ID_CLIENT = s.ID_CLIENT

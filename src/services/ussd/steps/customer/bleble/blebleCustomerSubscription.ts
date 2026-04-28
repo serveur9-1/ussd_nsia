@@ -333,7 +333,14 @@ const blebleCustomerSubscription = {
 							periodicite: "MENSUEL",
 						});
 						try {
-							await syncEvoSubscription(evoPayload);
+							const evoResult = await syncEvoSubscription(evoPayload);
+							await NepSouscriptionsRepository.updateEvoContractData(
+								Number(resultNepSubscription.data?.ID_SOUSCRIPTION),
+								{
+									evoContractId: evoResult.evoContractId,
+									numeroPolice: evoResult.numeroPolice
+								}
+							);
 						} catch (error) {
 							logger.error("[EVO_SYNC_IMMEDIATE_ERROR][BLEBLE]", {error, reference});
 							await ExternalSubscriptionSyncRepository.insert({
@@ -341,7 +348,11 @@ const blebleCustomerSubscription = {
 								localReference: reference,
 								localSubscriptionId: Number(resultNepSubscription.data?.ID_SOUSCRIPTION),
 								msisdn,
-								payload: evoPayload
+								payload: {
+									...evoPayload,
+									localSubscriptionId: Number(resultNepSubscription.data?.ID_SOUSCRIPTION),
+									product: "BLEBLE"
+								}
 							});
 						}
 						
