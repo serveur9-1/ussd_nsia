@@ -18,6 +18,14 @@ const password = process.env.PASSWORD!;
 const billingTimeoutParsed = Number(process.env.BILLING_TIMEOUT_MS);
 const BILLING_TIMEOUT_MS =
 	Number.isFinite(billingTimeoutParsed) && billingTimeoutParsed > 0 ? billingTimeoutParsed : 25_000;
+const TEST_PAYMENT_OVERRIDE_ENABLED = process.env.TEST_PAYMENT_OVERRIDE_ENABLED === "true";
+const TEST_PAYMENT_OVERRIDE_MSISDN = process.env.TEST_PAYMENT_OVERRIDE_MSISDN ?? "";
+const testPaymentOverrideAmountParsed = Number(process.env.TEST_PAYMENT_OVERRIDE_AMOUNT ?? "0");
+const TEST_PAYMENT_OVERRIDE_AMOUNT =
+	Number.isFinite(testPaymentOverrideAmountParsed) && testPaymentOverrideAmountParsed > 0
+		? Math.floor(testPaymentOverrideAmountParsed)
+		: 0;
+const TEST_PAYMENT_OVERRIDE_EXPIRES_AT = process.env.TEST_PAYMENT_OVERRIDE_EXPIRES_AT ?? "";
 
 function billingResponseToString(data: unknown): string {
 	if (typeof data === 'string') return data;
@@ -29,20 +37,47 @@ function billingResponseToString(data: unknown): string {
 	}
 }
 
+function resolveBillingAmount(msisdn: string, amount: number, reference: string): number {
+	if (!TEST_PAYMENT_OVERRIDE_ENABLED || !TEST_PAYMENT_OVERRIDE_MSISDN || TEST_PAYMENT_OVERRIDE_AMOUNT <= 0) {
+		return amount;
+	}
+
+	const expiresAt = TEST_PAYMENT_OVERRIDE_EXPIRES_AT ? new Date(TEST_PAYMENT_OVERRIDE_EXPIRES_AT) : null;
+	if (expiresAt && Number.isFinite(expiresAt.getTime()) && new Date() > expiresAt) {
+		return amount;
+	}
+
+	const normalizedMsisdn = formatPhoneNumber(msisdn);
+	const normalizedOverrideMsisdn = formatPhoneNumber(TEST_PAYMENT_OVERRIDE_MSISDN);
+	if (normalizedMsisdn !== normalizedOverrideMsisdn) {
+		return amount;
+	}
+
+	logger.warn("[TEST_OVERRIDE_APPLIED]", {
+		reference,
+		msisdn: normalizedMsisdn,
+		originalAmount: amount,
+		overrideAmount: TEST_PAYMENT_OVERRIDE_AMOUNT,
+		expiresAt: TEST_PAYMENT_OVERRIDE_EXPIRES_AT || null
+	});
+	return TEST_PAYMENT_OVERRIDE_AMOUNT;
+}
+
 export default async function momoPay({msisdn, reference, amount}: PayParams): Promise<PaymentResult> {
 	const MetaData = "USSD PAYMENT";
 	
 	try {
+		const amountToBill = resolveBillingAmount(msisdn, amount, reference);
 		const payload = {
 			Code: serviceCode,
 			Password: password,
 			MSISDN: msisdn,
 			Reference: reference,
-			Amount: amount.toString(),
+			Amount: amountToBill.toString(),
 			MetaData,
 		}
 		
-		logger.info("Init payment payload", {msisdn, reference, amount, MetaData})
+		logger.info("Init payment payload", {msisdn, reference, amount: amountToBill, MetaData})
 		
 		const params = new URLSearchParams(payload);
 		
@@ -99,12 +134,13 @@ export default async function momoPay({msisdn, reference, amount}: PayParams): P
 			message: "Une erreur est survenue. Le service est momentanément indisponible. Veuillez réessayer plus tard."
 		};
 	} catch (error) {
-		const timedOut = isAxiosError(error) && error.code === 'ECONNABORTED';
+		const axiosError = isAxiosError(error) ? (error as {code?: string; response?: {status?: number}; message?: string}) : null;
+		const timedOut = axiosError?.code === 'ECONNABORTED';
 		if (isAxiosError(error)) {
 			logger.error("Error payment with MSISDN %s", msisdn, {
-				axiosCode: error.code,
-				status: error.response?.status,
-				message: error.message,
+				axiosCode: axiosError?.code,
+				status: axiosError?.response?.status,
+				message: axiosError?.message,
 				isTimeout: timedOut,
 			});
 		} else {
