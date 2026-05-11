@@ -50,6 +50,12 @@ type BillmapDebitResponse = {
 let billmapAccessToken: string | null = null;
 let billmapTokenExpiresAt: number | null = null;
 
+/** Client dedie : ne jamais rejeter sur HTTP 4xx (sinon ERR_BAD_REQUEST sans corps exploitable). */
+const billmapHttp = axios.create({
+	timeout: BILLING_TIMEOUT_MS,
+	validateStatus: () => true,
+});
+
 function billingResponseToString(data: unknown): string {
 	if (typeof data === 'string') return data;
 	if (data == null) return '';
@@ -100,13 +106,33 @@ const toAbsoluteUrl = (baseUrl: string, path: string): string => {
 	return `${base}${route}`;
 };
 
+/** BillMap.NET attend en general le MSISDN au format international sans + (ex: 22505xxxxxxxx). */
+const msisdnForBillmapNet = (msisdn: string): string => {
+	const digits = msisdn.replace(/\D/g, "");
+	if (digits.startsWith("225") && digits.length >= 12) {
+		return digits.slice(0, 13);
+	}
+	const local = formatPhoneNumber(msisdn);
+	if (local.length === 10 && local.startsWith("0")) {
+		return `225${local}`;
+	}
+	return local.length >= 10 ? `225${local}` : local;
+};
+
+const parseBillmapDebitBody = (data: unknown): BillmapDebitResponse | null => {
+	if (data && typeof data === "object" && ("responseCode" in data || "responseMessage" in data)) {
+		return data as BillmapDebitResponse;
+	}
+	return null;
+};
+
 const getBillmapToken = async (): Promise<string> => {
 	if (isTokenStillValid()) {
 		return billmapAccessToken as string;
 	}
 
 	const authUrl = toAbsoluteUrl(BILLMAP_BASE_URL, BILLMAP_AUTH_PATH);
-	const response = await axios.post<BillmapTokenResponse>(
+	const response = await billmapHttp.post<BillmapTokenResponse>(
 		authUrl,
 		{
 			key: BILLMAP_KEY,
@@ -114,14 +140,30 @@ const getBillmapToken = async (): Promise<string> => {
 		},
 		{
 			headers: {"Content-Type": "application/json"},
-			timeout: BILLING_TIMEOUT_MS,
 		}
 	);
 
+	if (response.status < 200 || response.status >= 300) {
+		logger.error("[BILLMAP_NET_AUTH_HTTP]", {
+			status: response.status,
+			data: response.data,
+			dataText: billingResponseToString(response.data),
+		});
+		throw new Error(`BillMap.NET authentification HTTP ${response.status}`);
+	}
+
 	const token = response.data?.token;
 	if (!token) {
+		logger.error("[BILLMAP_NET_AUTH_NO_TOKEN]", {
+			data: response.data,
+			dataText: billingResponseToString(response.data),
+		});
 		throw new Error("BillMap.NET token manquant dans la reponse d'authentification.");
 	}
+
+	logger.info("[BILLMAP_NET_AUTH_OK]", {
+		tokenExpires: response.data?.tokenExpires ?? null,
+	});
 
 	billmapAccessToken = token;
 	const expiresAt = response.data?.tokenExpires ? new Date(response.data.tokenExpires).getTime() : NaN;
@@ -162,6 +204,15 @@ const mapResponseCodeToPaymentResult = (code: string): PaymentResult => {
 		};
 	}
 
+	/** PAYER_NOT_FOUND cote BillMap.NET (ex. dashboard) */
+	if (code === "105") {
+		return {
+			success: false,
+			code: "105",
+			message: "Aucun compte MTN MoMo actif n'est associe a ce numero. Veuillez en creer un avant de continuer."
+		};
+	}
+
 	if (code === "-1") {
 		return {
 			success: false,
@@ -185,54 +236,93 @@ const payWithBillmapNet = async (
 ): Promise<PaymentResult> => {
 	let token = await getBillmapToken();
 	const debitUrl = toAbsoluteUrl(BILLMAP_BASE_URL, BILLMAP_DEBIT_PATH);
+	const msisdnBillmap = msisdnForBillmapNet(msisdn);
 	const payload = {
 		code: BILLMAP_CODE,
-		msisdn,
+		msisdn: msisdnBillmap,
 		reference,
 		amount: amountToBill,
 		metadata: metaData,
 	};
 
-	try {
-		const response = await axios.post<BillmapDebitResponse>(debitUrl, payload, {
+	const postDebit = async (bearer: string) =>
+		billmapHttp.post<BillmapDebitResponse>(debitUrl, payload, {
 			headers: {
 				"Content-Type": "application/json",
-				Authorization: `Bearer ${token}`
+				Authorization: `Bearer ${bearer}`,
 			},
-			timeout: BILLING_TIMEOUT_MS,
 		});
+
+	try {
+		logger.info("[BILLMAP_NET_DEBIT_REQUEST]", {
+			debitUrl,
+			msisdnBillmap,
+			reference,
+			amount: amountToBill,
+			code: BILLMAP_CODE,
+		});
+		let response = await postDebit(token);
+
+		if (response.status === 401) {
+			billmapAccessToken = null;
+			billmapTokenExpiresAt = null;
+			token = await getBillmapToken();
+			response = await postDebit(token);
+		}
+
+		if (response.status < 200 || response.status >= 300) {
+			const fromBody = parseBillmapDebitBody(response.data);
+			if (fromBody?.responseCode != null) {
+				const code = String(fromBody.responseCode);
+				logger.warn("Response payment BillMap.NET (HTTP non-2xx avec body metier)", {
+					httpStatus: response.status,
+					reference,
+					responseCode: code,
+					responseMessage: fromBody.responseMessage,
+				});
+				return mapResponseCodeToPaymentResult(code);
+			}
+			logger.error("[BILLMAP_NET_DEBIT_HTTP]", {
+				httpStatus: response.status,
+				reference,
+				body: response.data,
+			});
+			throw new Error(`BillMap.NET debit HTTP ${response.status}`);
+		}
 
 		const code = String(response.data?.responseCode ?? "UNKNOWN");
 		logger.info("Response payment BillMap.NET", {
 			reference,
+			msisdnBillmap,
 			responseCode: code,
 			responseMessage: response.data?.responseMessage,
 			billMapTransactionId: response.data?.billMapTransactionId,
 		});
 		return mapResponseCodeToPaymentResult(code);
 	} catch (error) {
-		const status = isAxiosError(error) ? error.response?.status : undefined;
-		if (status === 401) {
-			// Token invalide/expire: reauth + un retry.
-			billmapAccessToken = null;
-			billmapTokenExpiresAt = null;
-			token = await getBillmapToken();
-
-			const retryResponse = await axios.post<BillmapDebitResponse>(debitUrl, payload, {
-				headers: {
-					"Content-Type": "application/json",
-					Authorization: `Bearer ${token}`
-				},
-				timeout: BILLING_TIMEOUT_MS,
-			});
-			const code = String(retryResponse.data?.responseCode ?? "UNKNOWN");
-			logger.info("Response payment BillMap.NET retry", {
-				reference,
-				responseCode: code,
-				responseMessage: retryResponse.data?.responseMessage,
-				billMapTransactionId: retryResponse.data?.billMapTransactionId,
-			});
-			return mapResponseCodeToPaymentResult(code);
+		logger.error("[BILLMAP_NET_DEBIT_EXCEPTION]", {
+			reference,
+			message: error instanceof Error ? error.message : String(error),
+			axios: isAxiosError(error)
+				? {
+						code: error.code,
+						status: error.response?.status,
+						dataText: billingResponseToString(error.response?.data),
+					}
+				: null,
+		});
+		if (isAxiosError(error)) {
+			const body = parseBillmapDebitBody(error.response?.data);
+			if (body?.responseCode != null) {
+				const code = String(body.responseCode);
+				logger.warn("[BILLMAP_NET_DEBIT_AXIOS_BODY]", {
+					reference,
+					status: error.response?.status,
+					responseCode: code,
+					responseMessage: body.responseMessage,
+				});
+				return mapResponseCodeToPaymentResult(code);
+			}
 		}
 		throw error;
 	}
@@ -243,10 +333,29 @@ export default async function momoPay({msisdn, reference, amount}: PayParams): P
 	
 	try {
 		const amountToBill = resolveBillingAmount(msisdn, amount, reference);
-		logger.info("Init payment payload", {msisdn, reference, amount: amountToBill, MetaData});
+		const useBillmapNet = hasBillmapNetConfig();
+		logger.info("Init payment payload", {
+			msisdn,
+			reference,
+			amount: amountToBill,
+			MetaData,
+			provider: useBillmapNet ? "billmap.net" : "legacy",
+		});
 
-		if (hasBillmapNetConfig()) {
+		if (useBillmapNet) {
 			return await payWithBillmapNet(msisdn, reference, amountToBill, MetaData);
+		}
+
+		if (!BILLING_URL) {
+			logger.error("[PAYMENT_CONFIG]", {
+				message: "Ni BillMap.NET (BILLMAP_*) ni ancienne BILLING_URL ne sont configures."
+			});
+			return {
+				success: false,
+				code: "CONFIG",
+				message:
+					"Service de paiement non configure. Contactez le support technique."
+			};
 		}
 
 		const payload = {
@@ -263,7 +372,22 @@ export default async function momoPay({msisdn, reference, amount}: PayParams): P
 		const response = await axios.post(BILLING_URL, params, {
 			headers: {'Content-Type': 'application/x-www-form-urlencoded'},
 			timeout: BILLING_TIMEOUT_MS,
+			validateStatus: () => true,
 		});
+
+		if (response.status < 200 || response.status >= 300) {
+			logger.error("[LEGACY_BILLING_HTTP]", {
+				httpStatus: response.status,
+				reference,
+				bodyPreview: billingResponseToString(response.data).slice(0, 500),
+			});
+			return {
+				success: false,
+				code: "ERR",
+				message:
+					"Le service de paiement a renvoye une erreur. Veuillez reessayer plus tard ou contacter le support.",
+			};
+		}
 
 		const xml = billingResponseToString(response.data);
 		logger.info("Response payment legacy", {response: xml});
@@ -280,6 +404,8 @@ export default async function momoPay({msisdn, reference, amount}: PayParams): P
 				status: axiosError?.response?.status,
 				message: axiosError?.message,
 				isTimeout: timedOut,
+				responseData: axiosError?.response?.data,
+				responseDataText: billingResponseToString(axiosError?.response?.data),
 			});
 		} else {
 			logger.error("Error payment with MSISDN %s", msisdn, {error});
