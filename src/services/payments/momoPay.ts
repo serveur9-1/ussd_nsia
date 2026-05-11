@@ -396,7 +396,12 @@ export default async function momoPay({msisdn, reference, amount}: PayParams): P
 		const code = match ? match[1] : "UNKNOWN";
 		return mapResponseCodeToPaymentResult(code);
 	} catch (error) {
-		const axiosError = isAxiosError(error) ? (error as {code?: string; response?: {status?: number}; message?: string}) : null;
+		type AxiosLike = {
+			code?: string;
+			message?: string;
+			response?: {status?: number; data?: unknown};
+		};
+		const axiosError = isAxiosError(error) ? (error as AxiosLike) : null;
 		const timedOut = axiosError?.code === 'ECONNABORTED';
 		if (isAxiosError(error)) {
 			logger.error("Error payment with MSISDN %s", msisdn, {
