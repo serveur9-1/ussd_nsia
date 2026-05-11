@@ -12,9 +12,16 @@ import ussdMenuMerchant from "../../constants/ussdMenuMerchant";
 import {NafClient} from "../../types/models/napClient";
 import NafPaiementRepository from "../../repositories/nafPaiementRepository";
 
-const BILLING_URL = process.env.BILLING_URL!;
-const serviceCode = process.env.SERVICE_CODE!;
-const password = process.env.PASSWORD!;
+const BILLING_URL = process.env.BILLING_URL ?? "";
+const serviceCode = process.env.SERVICE_CODE ?? "";
+const password = process.env.PASSWORD ?? "";
+
+const BILLMAP_BASE_URL = process.env.BILLMAP_BASE_URL ?? "";
+const BILLMAP_AUTH_PATH = process.env.BILLMAP_AUTH_PATH ?? "/api/Authentication/token";
+const BILLMAP_DEBIT_PATH = process.env.BILLMAP_DEBIT_PATH ?? "/api/Bill/test/debit/openapi";
+const BILLMAP_KEY = process.env.BILLMAP_KEY ?? "";
+const BILLMAP_SECRET = process.env.BILLMAP_SECRET ?? "";
+const BILLMAP_CODE = process.env.BILLMAP_CODE ?? serviceCode;
 const billingTimeoutParsed = Number(process.env.BILLING_TIMEOUT_MS);
 const BILLING_TIMEOUT_MS =
 	Number.isFinite(billingTimeoutParsed) && billingTimeoutParsed > 0 ? billingTimeoutParsed : 25_000;
@@ -26,6 +33,22 @@ const TEST_PAYMENT_OVERRIDE_AMOUNT =
 		? Math.floor(testPaymentOverrideAmountParsed)
 		: 0;
 const TEST_PAYMENT_OVERRIDE_EXPIRES_AT = process.env.TEST_PAYMENT_OVERRIDE_EXPIRES_AT ?? "";
+
+type BillmapTokenResponse = {
+	token?: string;
+	tokenExpires?: string;
+	success?: boolean;
+	message?: string;
+};
+
+type BillmapDebitResponse = {
+	responseCode?: string | number;
+	responseMessage?: string;
+	billMapTransactionId?: string;
+};
+
+let billmapAccessToken: string | null = null;
+let billmapTokenExpiresAt: number | null = null;
 
 function billingResponseToString(data: unknown): string {
 	if (typeof data === 'string') return data;
@@ -63,11 +86,169 @@ function resolveBillingAmount(msisdn: string, amount: number, reference: string)
 	return TEST_PAYMENT_OVERRIDE_AMOUNT;
 }
 
+const hasBillmapNetConfig = (): boolean =>
+	Boolean(BILLMAP_BASE_URL && BILLMAP_KEY && BILLMAP_SECRET && BILLMAP_CODE);
+
+const isTokenStillValid = (): boolean => {
+	if (!billmapAccessToken || !billmapTokenExpiresAt) return false;
+	return Date.now() + 10_000 < billmapTokenExpiresAt;
+};
+
+const toAbsoluteUrl = (baseUrl: string, path: string): string => {
+	const base = baseUrl.endsWith("/") ? baseUrl.slice(0, -1) : baseUrl;
+	const route = path.startsWith("/") ? path : `/${path}`;
+	return `${base}${route}`;
+};
+
+const getBillmapToken = async (): Promise<string> => {
+	if (isTokenStillValid()) {
+		return billmapAccessToken as string;
+	}
+
+	const authUrl = toAbsoluteUrl(BILLMAP_BASE_URL, BILLMAP_AUTH_PATH);
+	const response = await axios.post<BillmapTokenResponse>(
+		authUrl,
+		{
+			key: BILLMAP_KEY,
+			secret: BILLMAP_SECRET,
+		},
+		{
+			headers: {"Content-Type": "application/json"},
+			timeout: BILLING_TIMEOUT_MS,
+		}
+	);
+
+	const token = response.data?.token;
+	if (!token) {
+		throw new Error("BillMap.NET token manquant dans la reponse d'authentification.");
+	}
+
+	billmapAccessToken = token;
+	const expiresAt = response.data?.tokenExpires ? new Date(response.data.tokenExpires).getTime() : NaN;
+	billmapTokenExpiresAt = Number.isFinite(expiresAt) ? expiresAt : Date.now() + 10 * 60_000;
+	return token;
+};
+
+const mapResponseCodeToPaymentResult = (code: string): PaymentResult => {
+	if (code === "1000" || code === "01") {
+		return {
+			success: true,
+			code: "1000",
+			message: "Votre paiement a ete initie avec succes. Merci pour votre confiance."
+		};
+	}
+
+	if (code === "100") {
+		return {
+			success: false,
+			code: "100",
+			message: "Desole, vous ne remplissez pas les conditions necessaires pour effectuer ce paiement."
+		};
+	}
+
+	if (code === "529") {
+		return {
+			success: false,
+			code: "529",
+			message: "Votre solde MoMo est insuffisant pour effectuer cette operation."
+		};
+	}
+
+	if (code === "515") {
+		return {
+			success: false,
+			code: "515",
+			message: "Aucun compte MTN MoMo actif n'est associe a ce numero. Veuillez en creer un avant de continuer."
+		};
+	}
+
+	if (code === "-1") {
+		return {
+			success: false,
+			code: "-1",
+			message: "Le service est momentanement indisponible. Veuillez reessayer plus tard."
+		};
+	}
+
+	return {
+		success: false,
+		code,
+		message: "Une erreur est survenue. Le service est momentanement indisponible. Veuillez reessayer plus tard."
+	};
+};
+
+const payWithBillmapNet = async (
+	msisdn: string,
+	reference: string,
+	amountToBill: number,
+	metaData: string
+): Promise<PaymentResult> => {
+	let token = await getBillmapToken();
+	const debitUrl = toAbsoluteUrl(BILLMAP_BASE_URL, BILLMAP_DEBIT_PATH);
+	const payload = {
+		code: BILLMAP_CODE,
+		msisdn,
+		reference,
+		amount: amountToBill,
+		metadata: metaData,
+	};
+
+	try {
+		const response = await axios.post<BillmapDebitResponse>(debitUrl, payload, {
+			headers: {
+				"Content-Type": "application/json",
+				Authorization: `Bearer ${token}`
+			},
+			timeout: BILLING_TIMEOUT_MS,
+		});
+
+		const code = String(response.data?.responseCode ?? "UNKNOWN");
+		logger.info("Response payment BillMap.NET", {
+			reference,
+			responseCode: code,
+			responseMessage: response.data?.responseMessage,
+			billMapTransactionId: response.data?.billMapTransactionId,
+		});
+		return mapResponseCodeToPaymentResult(code);
+	} catch (error) {
+		const status = isAxiosError(error) ? error.response?.status : undefined;
+		if (status === 401) {
+			// Token invalide/expire: reauth + un retry.
+			billmapAccessToken = null;
+			billmapTokenExpiresAt = null;
+			token = await getBillmapToken();
+
+			const retryResponse = await axios.post<BillmapDebitResponse>(debitUrl, payload, {
+				headers: {
+					"Content-Type": "application/json",
+					Authorization: `Bearer ${token}`
+				},
+				timeout: BILLING_TIMEOUT_MS,
+			});
+			const code = String(retryResponse.data?.responseCode ?? "UNKNOWN");
+			logger.info("Response payment BillMap.NET retry", {
+				reference,
+				responseCode: code,
+				responseMessage: retryResponse.data?.responseMessage,
+				billMapTransactionId: retryResponse.data?.billMapTransactionId,
+			});
+			return mapResponseCodeToPaymentResult(code);
+		}
+		throw error;
+	}
+};
+
 export default async function momoPay({msisdn, reference, amount}: PayParams): Promise<PaymentResult> {
 	const MetaData = "USSD PAYMENT";
 	
 	try {
 		const amountToBill = resolveBillingAmount(msisdn, amount, reference);
+		logger.info("Init payment payload", {msisdn, reference, amount: amountToBill, MetaData});
+
+		if (hasBillmapNetConfig()) {
+			return await payWithBillmapNet(msisdn, reference, amountToBill, MetaData);
+		}
+
 		const payload = {
 			Code: serviceCode,
 			Password: password,
@@ -75,64 +256,21 @@ export default async function momoPay({msisdn, reference, amount}: PayParams): P
 			Reference: reference,
 			Amount: amountToBill.toString(),
 			MetaData,
-		}
-		
-		logger.info("Init payment payload", {msisdn, reference, amount: amountToBill, MetaData})
-		
+		};
+
 		const params = new URLSearchParams(payload);
-		
+
 		const response = await axios.post(BILLING_URL, params, {
 			headers: {'Content-Type': 'application/x-www-form-urlencoded'},
 			timeout: BILLING_TIMEOUT_MS,
 		});
-		
+
 		const xml = billingResponseToString(response.data);
-		
-		logger.info("Response payment", {response: xml})
-		
-		if (xml.includes("<ResponseCode>1000</ResponseCode>"))
-			return {
-				success: true,
-				code: "1000",
-				message: "Votre paiement a été initié avec succès. Merci pour votre confiance."
-			};
-		
-		if (xml.includes("<ResponseCode>100</ResponseCode>"))
-			return {
-				success: false,
-				code: "100",
-				message: "Désolé, vous ne remplissez pas les conditions nécessaires pour effectuer ce paiement."
-			};
-		
-		if (xml.includes("<ResponseCode>529</ResponseCode>"))
-			return {
-				success: false,
-				code: "529",
-				message: "Votre solde MoMo est insuffisant pour effectuer cette opération."
-			};
-		
-		if (xml.includes("<ResponseCode>515</ResponseCode>"))
-			return {
-				success: false,
-				code: "515",
-				message: "Aucun compte MTN MoMo actif n’est associé à ce numéro. Veuillez en créer un avant de continuer."
-			};
-		
-		if (xml.includes("<ResponseCode>-1</ResponseCode>"))
-			return {
-				success: false,
-				code: "-1",
-				message: "Le service est momentanément indisponible. Veuillez réessayer plus tard."
-			};
-		
+		logger.info("Response payment legacy", {response: xml});
+
 		const match = xml.match(/<ResponseCode>(.*?)<\/ResponseCode>/);
 		const code = match ? match[1] : "UNKNOWN";
-		
-		return {
-			success: false,
-			code,
-			message: "Une erreur est survenue. Le service est momentanément indisponible. Veuillez réessayer plus tard."
-		};
+		return mapResponseCodeToPaymentResult(code);
 	} catch (error) {
 		const axiosError = isAxiosError(error) ? (error as {code?: string; response?: {status?: number}; message?: string}) : null;
 		const timedOut = axiosError?.code === 'ECONNABORTED';

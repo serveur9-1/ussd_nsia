@@ -214,19 +214,9 @@ const blebleCustomerPay = {
 			plan
 		}
 		
-		// Format exact pour paiement libre (Option 3)
-		const responseMessage = `Votre demande de paiement libre\nde ${amount.toLocaleString()} FCFA, frais 5% (du\nmontant payé) Total: ${total.toLocaleString()} FCFA\nest en cours de traitement,\nVous recevrez un message pour\neffectuer le paiement des frais`;
-
-		/* previously replaced
 		return {
 			response: confirm.text(plan),
 			nextStep: 'bleble_pay_confirm_payment_details_customer',
-			updatedData: payload,
-		};*/
-
-		return {
-			response: responseMessage,
-			nextStep: 'bleble_pay_confirm_payment_details_customer', // SET TO NULL IF THIS IS THE END OF THE USSD FLOW
 			updatedData: payload,
 		};
 	
