@@ -172,7 +172,8 @@ const getBillmapToken = async (): Promise<string> => {
 };
 
 const mapResponseCodeToPaymentResult = (code: string): PaymentResult => {
-	if (code === "1000" || code === "01") {
+	/** 1000 / Pending (souvent UAT) ; 01 (succes IPN / certains flux) ; 81 = succes cote BillMap.NET PROD (dashboard). */
+	if (code === "1000" || code === "01" || code === "81") {
 		return {
 			success: true,
 			code: "1000",
@@ -221,6 +222,7 @@ const mapResponseCodeToPaymentResult = (code: string): PaymentResult => {
 		};
 	}
 
+	logger.warn("[BILLMAP_NET_UNKNOWN_RESPONSE_CODE]", {code});
 	return {
 		success: false,
 		code,
