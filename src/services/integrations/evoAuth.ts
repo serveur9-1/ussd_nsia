@@ -5,9 +5,10 @@ export const EVO_BASE_URL = process.env.EVO_BASE_URL ?? "https://evo-test.nsiavi
 export const EVO_USERNAME = process.env.EVO_USERNAME ?? "";
 export const EVO_PASSWORD = process.env.EVO_PASSWORD ?? "";
 const evoTimeoutParsed = Number(process.env.EVO_TIMEOUT_MS);
-/** Defaut 45s : save-simple-contrat / payment/echeance peuvent depasser 15s sur evo-test. */
-export const EVO_TIMEOUT_MS =
+const fromEnv =
 	Number.isFinite(evoTimeoutParsed) && evoTimeoutParsed >= 5000 ? evoTimeoutParsed : 45_000;
+/** Plancher 45s : evo-test depasse souvent 15s sur payment/echeance (compose peut encore passer 15000). */
+export const EVO_TIMEOUT_MS = Math.max(45_000, fromEnv);
 
 export const evoLogin = async (): Promise<string> => {
 	const response = await axios.post(
