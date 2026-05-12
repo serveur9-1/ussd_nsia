@@ -289,12 +289,17 @@ export default async function instantPaymentNotificationServiceController(req: R
 			if ((categorie === "NEP" || categorie === "NAF") && detailAction[0] === "PAY") {
 				let evoContractId: number | null = null;
 				let numeroPolice: string | null = null;
+				let amountForEvo = amount;
 				if (categorie === "NEP") {
 					const payment = await NepPaiementRepository.getByReference(reference);
 					if (payment.status && payment.data) {
 						const sub = await NepSouscriptionsRepository.getByIdWithClient(payment.data.ID_SOUSCRIPTION);
 						evoContractId = sub.data?.EVO_CONTRACT_ID ?? null;
 						numeroPolice = sub.data?.NUMERO_POLICE ?? null;
+						const m = Number(payment.data.MONTANT_PAIEMENT);
+						if (Number.isFinite(m) && m > 0) {
+							amountForEvo = String(Math.floor(m));
+						}
 					}
 				}
 				if (categorie === "NAF") {
@@ -303,11 +308,22 @@ export default async function instantPaymentNotificationServiceController(req: R
 						const sub = await NafSouscriptionRepository.getByIdWithClient(payment.data.ID_SOUSCRIPTION);
 						evoContractId = sub.data?.EVO_CONTRACT_ID ?? null;
 						numeroPolice = sub.data?.NUMERO_POLICE ?? null;
+						const m = Number(payment.data.MONTANT_PAIEMENT);
+						if (Number.isFinite(m) && m > 0) {
+							amountForEvo = String(Math.floor(m));
+						}
 					}
+				}
+				if (amountForEvo !== amount) {
+					logger.info("[EVO_SYNC_AMOUNT_FROM_SUBSCRIPTION]", {
+						reference,
+						ipnAmount: amount,
+						subscriptionPaymentAmount: amountForEvo
+					});
 				}
 				scheduleEvoMomoPaymentAfterIpn({
 					msisdn,
-					amount,
+					amount: amountForEvo,
 					reference,
 					categorie: categorie as "NEP" | "NAF",
 					evoContractId,

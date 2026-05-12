@@ -222,12 +222,17 @@ export const webhook = async (req: Request, res: Response) => {
 			if ((categorie === "NEP" || categorie === "NAF") && action.startsWith("PAY")) {
 				let evoContractId: number | null = null;
 				let numeroPolice: string | null = null;
+				let amountForEvo = data.amount;
 				if (categorie === "NEP") {
 					const payment = await NepPaiementRepository.getByReference(data.reference);
 					if (payment.status && payment.data) {
 						const sub = await NepSouscriptionsRepository.getByIdWithClient(payment.data.ID_SOUSCRIPTION);
 						evoContractId = sub.data?.EVO_CONTRACT_ID ?? null;
 						numeroPolice = sub.data?.NUMERO_POLICE ?? null;
+						const m = Number(payment.data.MONTANT_PAIEMENT);
+						if (Number.isFinite(m) && m > 0) {
+							amountForEvo = String(Math.floor(m));
+						}
 					}
 				}
 				if (categorie === "NAF") {
@@ -236,11 +241,22 @@ export const webhook = async (req: Request, res: Response) => {
 						const sub = await NafSouscriptionRepository.getByIdWithClient(payment.data.ID_SOUSCRIPTION);
 						evoContractId = sub.data?.EVO_CONTRACT_ID ?? null;
 						numeroPolice = sub.data?.NUMERO_POLICE ?? null;
+						const m = Number(payment.data.MONTANT_PAIEMENT);
+						if (Number.isFinite(m) && m > 0) {
+							amountForEvo = String(Math.floor(m));
+						}
 					}
+				}
+				if (amountForEvo !== data.amount) {
+					logger.info("[EVO_SYNC_AMOUNT_FROM_SUBSCRIPTION]", {
+						reference: data.reference,
+						ipnAmount: data.amount,
+						subscriptionPaymentAmount: amountForEvo
+					});
 				}
 				scheduleEvoMomoPaymentAfterIpn({
 					msisdn: data.msisdn,
-					amount: data.amount,
+					amount: amountForEvo,
 					reference: data.reference,
 					categorie: categorie as "NEP" | "NAF",
 					evoContractId,

@@ -2,6 +2,8 @@ import {queueEvoMomoPayment} from "./evoPaymentRachat";
 
 /**
  * Envoie le paiement MoMo vers EVO sans bloquer la réponse IPN.
+ * `amount` sert au rapprochement d'échéance côté EVO : utiliser le montant **prime souscription**
+ * (`nep_paiements` / `naf_paiements`), pas uniquement le montant débité sur l'IPN (ex. tests partiels).
  */
 export function scheduleEvoMomoPaymentAfterIpn(params: {
 	msisdn: string;
