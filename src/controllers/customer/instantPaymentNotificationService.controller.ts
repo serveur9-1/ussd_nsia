@@ -23,20 +23,22 @@ function normalizeBillmapResponseCode(raw: unknown): string {
 }
 
 function extractParams(req: Request) {
+	const q = req.query ?? {};
+	const b = req.body ?? {};
 	const ewpFromQuery =
-		req.query.EWPTransactionId ??
-		req.body.EWPTransactionId ??
-		req.query.ExternalTransactionId ??
-		req.body.ExternalTransactionId ??
+		q.EWPTransactionId ??
+		b.EWPTransactionId ??
+		q.ExternalTransactionId ??
+		b.ExternalTransactionId ??
 		"";
 	return {
-		reference: String(req.query.Reference || req.body.Reference || ""),
-		amount: String(req.query.Amount || req.body.Amount || ""),
-		msisdn: String(req.query.MSISDN || req.body.MSISDN || ""),
-		billMapTransactionId: String(req.query.BillMapTransactionId || req.body.BillMapTransactionId || ""),
+		reference: String(q.Reference || b.Reference || ""),
+		amount: String(q.Amount || b.Amount || ""),
+		msisdn: String(q.MSISDN || b.MSISDN || ""),
+		billMapTransactionId: String(q.BillMapTransactionId || b.BillMapTransactionId || ""),
 		eWPTransactionId: String(ewpFromQuery),
-		responseCode: normalizeBillmapResponseCode(req.query.ResponseCode ?? req.body.ResponseCode ?? ""),
-		responseMessage: String(req.query.ResponseMessage || req.body.ResponseMessage || "")
+		responseCode: normalizeBillmapResponseCode(q.ResponseCode ?? b.ResponseCode ?? ""),
+		responseMessage: String(q.ResponseMessage || b.ResponseMessage || "")
 	};
 }
 
