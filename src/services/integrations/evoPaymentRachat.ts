@@ -178,11 +178,15 @@ export const syncEvoMomoPayment = async (payload: EvoMomoPaymentPayload): Promis
 	}
 
 	const {contractId, numeroContrat, contractData, token} = await resolveContractFromPayload(payload);
+	const paid = parseAmount(payload.amount);
 
-	// Nouveau flow: prendre la 1ere echeance non payee du contrat retourne par /api/contrats/by-numero.
-	let echeance = pickFirstEcheanceFromContract(contractData);
-	if (!echeance) {
-		let imp = await axios
+	// Toujours partir des échéances impayées (le 1er index du contrat peut être déjà PAYE → 400 côté EVO).
+	let imp: EcheanceCandidate[] = [];
+	if (contractData) {
+		imp = collectUnpaidFromCotisations(contractData);
+	}
+	if (imp.length === 0 && numeroContrat.trim()) {
+		imp = await axios
 			.get(`${EVO_BASE_URL}/api/contrat/echeances-impayes`, {
 				params: {numeroContrat},
 				headers: {Authorization: `Bearer ${token}`},
@@ -190,11 +194,10 @@ export const syncEvoMomoPayment = async (payload: EvoMomoPaymentPayload): Promis
 			})
 			.then(r => parseEcheancesArray(r.data))
 			.catch(() => [] as EcheanceCandidate[]);
-		if (imp.length === 0 && contractData) {
-			imp = collectUnpaidFromCotisations(contractData);
-		}
-		const paid = parseAmount(payload.amount);
-		echeance = pickEcheanceForAmount(imp, paid);
+	}
+	let echeance = pickEcheanceForAmount(imp, paid);
+	if (!echeance) {
+		echeance = pickFirstEcheanceFromContract(contractData);
 	}
 
 	if (!echeance) {
