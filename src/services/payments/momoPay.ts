@@ -214,6 +214,16 @@ const mapResponseCodeToPaymentResult = (code: string): PaymentResult => {
 		};
 	}
 
+	/** BillMap.NET : compte key/secret ou biller pas encore activé pour le débit PROD. */
+	if (code === "401") {
+		return {
+			success: false,
+			code: "401",
+			message:
+				"L'intégration paiement n'est pas activée sur BillMap (Integration Not Activated). Merci de contacter le support Evesis / MTN."
+		};
+	}
+
 	if (code === "-1") {
 		return {
 			success: false,

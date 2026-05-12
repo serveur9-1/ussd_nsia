@@ -15,14 +15,27 @@ import {TypeProductCommission} from "../../types/models/commission";
 import {AutoDebitStatus} from "../../types/models/autoDebitSchedule";
 import {scheduleEvoMomoPaymentAfterIpn} from "../../services/integrations/scheduleEvoMomoPayment";
 
+/** qs/Express may coerce `ResponseCode=01` to number `1`, breaking `=== "01"`. */
+function normalizeBillmapResponseCode(raw: unknown): string {
+	const s = String(raw ?? "").trim();
+	if (s === "1") return "01";
+	return s;
+}
+
 function extractParams(req: Request) {
+	const ewpFromQuery =
+		req.query.EWPTransactionId ??
+		req.body.EWPTransactionId ??
+		req.query.ExternalTransactionId ??
+		req.body.ExternalTransactionId ??
+		"";
 	return {
 		reference: String(req.query.Reference || req.body.Reference || ""),
 		amount: String(req.query.Amount || req.body.Amount || ""),
 		msisdn: String(req.query.MSISDN || req.body.MSISDN || ""),
 		billMapTransactionId: String(req.query.BillMapTransactionId || req.body.BillMapTransactionId || ""),
-		eWPTransactionId: String(req.query.EWPTransactionId || req.body.EWPTransactionId || ""),
-		responseCode: String(req.query.ResponseCode || req.body.ResponseCode || ""),
+		eWPTransactionId: String(ewpFromQuery),
+		responseCode: normalizeBillmapResponseCode(req.query.ResponseCode ?? req.body.ResponseCode ?? ""),
 		responseMessage: String(req.query.ResponseMessage || req.body.ResponseMessage || "")
 	};
 }
@@ -244,7 +257,7 @@ export default async function instantPaymentNotificationServiceController(req: R
 		const [realAmount] = amount.split(".", 2);
 		const prime = (100 * parseInt(realAmount || "0", 10)) / 110;
 		
-		await FactureRepository.insert({
+		const factureInsert = await FactureRepository.insert({
 			AMOUNT: amount,
 			BILLMAP_TRANSACTION_ID: billMapTransactionId,
 			MSISDN: msisdn,
@@ -255,8 +268,11 @@ export default async function instantPaymentNotificationServiceController(req: R
 			RESPONSE_CODE: responseCode,
 			RESPONSE_MESSAGE: responseMessage
 		});
-		
-		logger.debug("[FACTURE_INSERTED]", {reference, prime});
+		if (!factureInsert.status) {
+			logger.error("[FACTURE_INSERT_FAILED]", {reference, responseCode, billMapTransactionId});
+		} else {
+			logger.debug("[FACTURE_INSERTED]", {reference, prime});
+		}
 		
 		const [, autresRef, categorie, action, periode] = reference.split("_");
 		const detailAction = action.split("-");
