@@ -200,6 +200,13 @@ export const syncEvoMomoPayment = async (payload: EvoMomoPaymentPayload): Promis
 		echeance = pickFirstEcheanceFromContract(contractData);
 	}
 
+	logger.debug("[EVO_PAYMENT_ECHEANCE_MATCH]", {
+		reference: payload.referencePaiement,
+		montantRapprochement: paid,
+		impayees: imp.length,
+		echeanceChoisieId: echeance?.id ?? null
+	});
+
 	if (!echeance) {
 		throw new Error("EVO: aucune échéance impayée à rapprocher");
 	}
@@ -227,7 +234,8 @@ export const syncEvoMomoPayment = async (payload: EvoMomoPaymentPayload): Promis
 		reference: payload.referencePaiement,
 		contractId,
 		echeanceId: echeance.id,
-		numeroContrat
+		numeroContrat,
+		montantRapprochement: paid
 	});
 };
 
